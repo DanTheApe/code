@@ -1,0 +1,64 @@
+Oblig 2 bygger videre på samme UI applikasjon som brukt i oblig 1.
+
+Læringsmål oblig 2:
+
+    Forstå og implementere TCP socket-programmering
+    Utvikle robuste nettverksapplikasjoner med proper feilhåndtering
+    Designe og implementere en klient/server-arkitektur
+    Håndtere samtidige nettverkstilkoblinger (UDP funksjonene fra oblig skal fortsatt fungere)
+    Implementere sikker nettverkskommunikasjon
+    Lære å lese RFC. RFC USNChat01 beskriver protokollen som skal implementeres og er publisert på canvas
+
+For de som ikke ønsker å bruke UI'en så vil det også godtas å oppfylle kravene i små frittstående applikasjoner. Dersom denne løsningen velges kan man f.eks skrive et rammeverk som publiserer egen informasjon via egen tråd (krav 1), og så kopiere denne og implementere de enkelte kravnene hver for seg i egne små applikasjoner.
+
+ 
+
+Kravspesifikasjon:
+
+1. Implementere åpent rom med garantert kommunikasjon
+
+    Et åpent rom hvor alle kan melde seg inn
+    Opprettes av en bruker etter behov, og invitasjon sendes via UDP broadcast
+    Den som oppretter rommet blir server for alle som melder seg inn som da blir klienter
+    Kommunikasjon implementeres vha TCP
+
+2. Sikkert rom
+
+    Et lukket rom hvor kun den som inviteres får lov å melde seg inn
+    Opprettes av en bruker etter behov, og invitasjon sendes via UDP unicast
+    Applikasjon må kunne motta en invitasjon og svare på den
+    Den som oppretter rommet blir server, den som inviteres blir klient
+    Kommunikasjon implementeres vha TCP og data krypteres
+
+ 
+
+Følgende gjelder for oblig 1 og 2:
+
+Bruk av biblioteker
+
+det skal ikke brukes noen ferdig biblioteker utover basis socket biblioteker slik som er demonstrert i øvingstimene. Så biblioteker fra Qt er ikke lov.... 
+
+Feilhåndtering
+
+Applikasjonen skal implementere robust feilhåndtering for:
+
+    Nettverksfeil
+    Ugyldig input
+    Uventede nettverskbrudd
+    Buffer overflow prevention
+
+ 
+
+Testing
+
+    Teste meldinger lokalt på egen maskin
+    Teste de forskjellige rommene sammen med andre brukere
+    Bruke wireshark for å dokumentere meldingene, og vise data i de forskjellige OSI lagene 
+
+ 
+
+Sikkerhetsvurdering:
+
+    Identifiserte sårbarheter
+    Implementerte sikkerhetstiltak
+    Forslag til forbedringer
