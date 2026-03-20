@@ -8,7 +8,11 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include <thread>
+#include <chrono>
+
 namespace network {
+    static bool del{o};
     std::string getMyIp();
-    void anounceMyIp();
+    std::string anounceMyIp(bool s);
 }
