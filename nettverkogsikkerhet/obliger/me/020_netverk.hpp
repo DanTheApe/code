@@ -1,6 +1,8 @@
 #pragma once
 
 #include <iostream>
+#include <string>
+#include <atomic> // AI sugestion for thread safety
 
 #include <cstring>
 #include <unistd.h>
@@ -12,7 +14,7 @@
 #include <chrono>
 
 namespace network {
-    static bool del{o};
+    std::atomic_bool del;
     std::string getMyIp();
     std::string anounceMyIp(bool s);
 }

@@ -18,12 +18,10 @@ int main(){
     std::cout << "My IP address is: " << ip << std::endl;
     std::cout << "Anouncing my IP address" << std::endl;
     int i = 0;
-    while (i<10) {
-    std::thread(network::anounceMyIp(1));
-    std::cout << network::anounceMyIp(0) << "\n";
-    i++;
-    }
+    std::thread t(network::anounceMyIp, true);
     sleep(20);
-    network::del = true;
+
+    network::del.store(true);
+    t.join();
     return 0;
 }

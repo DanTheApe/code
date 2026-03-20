@@ -1,4 +1,5 @@
 #include "020_netverk.hpp"
+std::atomic_bool network::del{false};
 
 std::string network::getMyIp(){
     int s = socket(AF_INET, SOCK_DGRAM, 0);
@@ -24,7 +25,7 @@ std::string network::getMyIp(){
     return mrip;
 }
 
-std::string network::anounceMyIp(bool s){
+std::string network::anounceMyIp(bool b){
     int s = socket(AF_INET, SOCK_DGRAM, 0);
     if (s < 0) { perror("socket"); return ""; } // AI
 
@@ -41,7 +42,7 @@ std::string network::anounceMyIp(bool s){
     inet_pton(AF_INET, "192.168.41.255", &dst.sin_addr);
     // PRESENCE|-|username|ip-address
     std::string msg = "PRESENCE|-|DAN|" + getMyIp();
-    if (s){
+    if (b){
         while (!network::del) {
             ssize_t n = sendto(s, msg.c_str(), msg.size(), 0, reinterpret_cast<sockaddr*>(&dst), sizeof(dst));
             if (n < 0) perror("sendto"); // AI
@@ -51,7 +52,6 @@ std::string network::anounceMyIp(bool s){
     ssize_t n = sendto(s, msg.c_str(), msg.size(), 0, reinterpret_cast<sockaddr*>(&dst), sizeof(dst));
     if (n < 0) perror("sendto"); // AI
     close(s);
-    if (s) {std::join(std::this_thread);}
     return msg;
     // AI brukt til å finne feil. Hadde satt inet_pton til 255.255.255.255 som ikke fungerete, men 192.168.41.255 fungrete.
 }
