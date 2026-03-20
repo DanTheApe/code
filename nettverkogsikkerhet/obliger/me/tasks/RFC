@@ -1,0 +1,198 @@
+RFC USNChat01 — Simple Educational Chat Protocol (SECP)
+Status of This Memo
+This memo defines an experimental communication protocol intended for educational use.
+Distribution of this memo is unlimited.
+Abstract
+This document specifies the Simple Educational Chat Protocol (SECP), a lightweight chat
+protocol designed for students learning network programming. SECP intentionally combines
+UDP and TCP to demonstrate broadcast, multicast, unicast, and reliable connections. The
+protocol supports open and closed chat rooms, guaranteed delivery rooms using TCP, and
+optional encrypted communication for private guaranteed rooms.
+Table of Contents
+1. Introduction
+2. Terminology
+3. Protocol Overview
+4. Transport and Ports
+5. Message Format
+6. Presence Announcements
+7. Chat Rooms
+8. Room Types
+9. Room Discovery and Invitations
+10. Message Delivery Rules
+11. TCP Communication
+12. Optional Encryption
+13. Error Handling
+14. Security Considerations
+15. IANA Considerations
+16. References
+1. Introduction
+SECP is a simple, educational chat protocol that demonstrates multiple network
+communication patterns:
+• UDP broadcast for discovery and public chat
+• UDP multicast for scalable open-room messaging
+• UDP unicast for direct invitations and closed-room messaging
+• TCP for reliable, guaranteed-delivery rooms
+• Optional encrypted TCP for private guaranteed rooms
+SECP prioritizes clarity and ease of implementation over performance and security.
+2. Terminology
+The key words MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY are to be interpreted as
+described in RFC 2119.
+• User: A participant identified by a username.
+• Room: A named chat space.
+• Room Owner: The user who created the room.
+• Open Room: A room anyone may join or leave freely.
+• Closed Room: A room requiring invitation from the owner.
+• Guaranteed Room: A room using TCP for reliable delivery.
+• Private Guaranteed Room: A guaranteed room restricted to invited users; may be
+encrypted.
+• Presence Message: A periodic announcement sent by each client.
+3. Protocol Overview
+SECP uses:
+• UDP (port 50000) for presence announcements, room advertisements, invitations, and
+for chat in UDP-based rooms.
+• TCP (port 50001) for chat in guaranteed-delivery rooms.
+Clients discover users/rooms via periodic UDP broadcast messages. Room type determines
+how messages are sent.
+4. Transport and Ports
+4.1 Ports
+Purpose Protocol Port
+UDP communication UDP 50000
+TCP server for guaranteed rooms TCP 50001
+All UDP messages MUST be sent to port 50000.
+All TCP servers MUST listen on port 50001.
+4.2 Broadcast
+UDP broadcast MUST be sent to the local subnet broadcast address (e.g., 192.168.1.255) or the
+limited broadcast address 255.255.255.255, depending on platform constraints.
+4.3 Multicast (Chosen Address)
+SECP uses IPv4 multicast for open user-created rooms.
+• Multicast group: 239.0.0.1
+• UDP port: 50000
+• TTL: MUST be 1
+Educational simplification: All open multicast rooms MAY share the same multicast group.
+Clients MUST filter based on the ROOM field.
+5. Message Format
+All protocol messages are UTF-8 encoded text with fields separated by the pipe character (|):
+TYPE|ROOM|USERNAME|PAYLOAD
+• TYPE: Message type identifier (see below).
+• ROOM: Room name, or - if not applicable.
+• USERNAME: Sender username.
+• PAYLOAD: Message-specific content (may be - if not applicable).
+5.1 Message Types
+• PRESENCE — announces a user
+• ROOM_ANNOUNCE — advertises an open room
+• INVITE — invites user(s) to a closed/guaranteed/private room
+• CHAT — a chat message sent to a room
+6. Presence Announcements
+When an application starts, it MUST broadcast presence every 10 seconds as long as it is
+running.
+Format
+PRESENCE|-|username|ip-address
+Transport
+• UDP broadcast to port 50000
+• Interval: 10 seconds
+7. Chat Rooms
+Rooms are identified by a case-sensitive room name. Room names MUST NOT contain | and
+SHOULD be short (<= 32 characters).
+Each chat message sent to a room MUST include both USERNAME and the message text (via
+the CHAT message format).
+8. Room Types
+SECP defines multiple room types to demonstrate different network patterns:
+• Open Rooms allow anyone to join freely and demonstrate UDP broadcast/multicast.
+• Closed Rooms require invitations and demonstrate UDP unicast communication.
+• Guaranteed Rooms use TCP and demonstrate reliable client/server chat.
+• Private Guaranteed Rooms restrict access and MAY use encryption over TCP.
+8.1 Global Open Room: "USN Chat" (UDP Broadcast)
+The global open room is a shared public chat space on the local network. It demonstrates UDP
+broadcast and provides no delivery guarantees.
+• Room name: USN Chat
+• Transport: UDP broadcast
+Chat messages:
+CHAT|USN Chat|username|message
+8.2 User-Created Open Rooms (UDP Multicast)
+User-created open rooms allow unrestricted participation while reducing broadcast traffic. They
+demonstrate UDP multicast; clients join the multicast group to receive messages.
+• Room announcement: UDP broadcast every 10 seconds
+• Chat transport: UDP multicast (239.0.0.1:50000)
+Room announcement format:
+ROOM_ANNOUNCE|room-name|owner|OPEN
+Chat message format:
+CHAT|room-name|username|message
+8.3 Closed Rooms (UDP Unicast)
+Closed rooms restrict access through invitations from the owner. They demonstrate targeted
+UDP unicast communication without delivery guarantees.
+• Invitation: UDP unicast
+• Chat transport: UDP unicast (between participants)
+Invitation format:
+INVITE|room-name|owner|CLOSED
+Chat messages:
+CHAT|room-name|username|message
+8.4 Guaranteed Rooms (TCP, Invitation via UDP Broadcast)
+Guaranteed rooms provide reliable delivery using TCP. The owner acts as TCP server;
+participants connect as TCP clients.
+• Invitation: UDP broadcast every 10 seconds
+• Chat transport: TCP (owner-ip:50001)
+Invitation format:
+INVITE|room-name|owner|TCP
+8.5 Private Guaranteed Rooms (TCP, Invitation via UDP Unicast)
+Private guaranteed rooms restrict access to invited users. They demonstrate reliable point-to-
+point communication and MAY be encrypted.
+• Invitation: UDP unicast
+• Chat transport: TCP (owner-ip:50001)
+Invitation format:
+INVITE|room-name|owner|TCP_PRIVATE
+9. Room Discovery and Invitations
+9.1 Open Room Discovery
+• USN Chat is implicit and always available.
+• User-created open rooms MUST be advertised via UDP broadcast every 10 seconds
+while the room exists using ROOM_ANNOUNCE.
+9.2 Invitations
+Invitations MUST include:
+• room owner username (in USERNAME)
+• room name (in ROOM)
+• room type (in PAYLOAD)
+For invited rooms, the owner MUST send INVITE using UDP unicast.
+Note: Since the base message format does not include an explicit destination username,
+implementations SHOULD include the invited username inside PAYLOAD for unicast invitations,
+e.g.:
+INVITE|room-name|owner|CLOSED;to=invitedUser
+(Implementations MAY choose an equivalent simple convention.)
+10. Message Delivery Rules
+Room Type Transport Reliability
+USN Chat UDP broadcast Unreliable
+Open user-created UDP multicast Unreliable
+Closed UDP unicast Unreliable
+Guaranteed TCP Reliable
+Private guaranteed TCP Reliable
+11. TCP Communication
+11.1 Connection
+• Room owner MUST listen on TCP port 50001.
+• Participants connect to the owner’s IP address on port 50001.
+11.2 Framing (Line-Delimited)
+Messages sent over TCP and UDP MUST:
+• be UTF-8
+• be terminated by newline \n
+11.3 TCP Chat Message Format
+All chat messages over TCP MUST use the same CHAT format:
+CHAT|room-name|username|message
+There is no difference in message structure between UDP and TCP; only the transport differs.
+12. Optional Encryption
+Private guaranteed rooms MAY use encrypted data transfer.
+Recommendation: TLS SHOULD be used if encryption is implemented.
+If encryption is enabled, the TCP connection for that room MUST be established using TLS.
+Message format remains the same (line-delimited UTF-8), but transported inside the encrypted
+channel.
+13. Error Handling
+• Unknown TYPE values SHOULD be ignored.
+• Malformed messages (wrong number of fields, missing fields, invalid UTF-8) SHOULD be
+discarded.
+• No error responses are required.
+14. Security Considerations
+SECP provides no authentication, authorization, integrity, or replay protection by default. Users
+can spoof usernames and messages. UDP traffic may be lost or duplicated. This protocol is not
+suitable for production use.
+15. IANA Considerations
+This document makes no requests of IANA.
+16. References
+• RFC 768 — User Datagram Protocol
+• RFC 793 — Transmission Control Protocol
+• RFC 2119 — Key words for use in RFCs

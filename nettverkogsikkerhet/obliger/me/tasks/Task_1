@@ -1,0 +1,77 @@
+Chatte System
+
+I denne oppgaven skal du implementere et chatte system som støtter forskjellige typer "rom", hvor hver type rom krever forskjellig type kommunikasjon. Systemet skal implementeres ved hjelp av sockets i C++, valgfritt OS.
+
+Oppgavene vil gi deg praktisk erfaring med nettverksprogrammering, socket-kommunikasjon, klient/server-arkitektur, trafikk analyse mm
+
+ Det vil publiseres en UI applikasjon som kan benyttes slik at det ikke er nødvendig å bruke tid på UI'en. Denne UI applikasjonen brukes for alle obligene.
+
+For de som ikke ønsker å bruke UI'en så vil det også godtas å oppfylle kravene i små frittstående applikasjoner. Dersom denne løsningen velges kan man f.eks skrive et rammeverk som publiserer egen informasjon via egen tråd (krav 1), og så kopiere denne og implementere de enkelte kravnene hver for seg i egne små applikasjoner.
+
+Læringsmål oblig 1:
+
+    Forstå og implementere UDP socket-programmering
+    Utvikle robuste nettverksapplikasjoner med proper feilhåndtering
+    Lære å lese RFC. RFC USNChat01 beskriver protokollen som skal implementeres og er publisert på canvas.
+
+ 
+
+Obligatoriske krav
+
+1. Publisere egen informasjon
+
+    Når applikasjonen starter skal det sendes ut en broadcast som inkluderer brukernavn og IP adresse for å informere andre om at en ny bruker er aktiv
+    Applikasjonen skal vise en liste over brukere som er aktive
+
+2. Implementere kommunikasjon for et åpent felles rom
+
+    Et felles rom er et åpent rom hvor alle kan sende og motta meldinger
+    Kommunikasjon implementeres vha UDP broadcast
+    Brukeren skal kunne skrive inn meldinger og sende disse til rommet
+    Meldinger andre skriver skal vises i meldingsvinduet
+
+3. Implementere åpent grupperom
+
+    Et åpent grupperom er et rom hvor alle kan melde seg inn/ut
+    Opprettes av en bruker etter behov, og åpne grupperom publisere til andre via broadcast 
+    Kommunikasjon implementeres vha UDP multicast
+
+4. Implementere 1-1 rom
+
+    Et lukket rom hvor kun den som inviteres får lov å melde seg inn og sende meldinger
+    Opprettes av en bruker etter behov, og invitasjon sendes via UDP unicast til brukeren som inviteres 
+    Kommunikasjon implementeres vha UDP unicast
+
+Generelt for 1-4: Invitasjoner til åne rom publiseres jevnlig (hvert 5-10 sekund) slik at de som starter applikasjonen sin senere får informasjon etterhvert.
+
+Følgende gjelder for oblig 1 og 2:
+
+Bruk av biblioteker
+
+det skal ikke brukes noen ferdig biblioteker utover basis socket biblioteker slik som er demonstrert i øvingstimene. Så biblioteker fra Qt er ikke lov.... 
+
+Feilhåndtering
+
+Applikasjonen skal implementere robust feilhåndtering for:
+
+    Nettverksfeil
+    Ugyldig input
+    Uventede nettverskbrudd
+    Buffer overflow prevention
+
+ 
+
+Testing
+
+    Teste meldinger lokalt på egen maskin
+    Teste de forskjellige rommene sammen med andre brukere
+    Bruke wireshark for å dokumentere meldingene, og vise data i de forskjellige OSI lagene 
+
+ 
+
+Sikkerhetsvurdering:
+
+    Identifiserte sårbarheter
+    Implementerte sikkerhetstiltak
+    Forslag til forbedringer
+
