@@ -14,7 +14,7 @@
 #include <chrono>
 
 namespace network {
-    std::atomic_bool del;
+    extern std::atomic_bool del;
     std::string getMyIp();
     std::string anounceMyIp(bool s);
 }

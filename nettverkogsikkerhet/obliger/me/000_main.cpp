@@ -19,7 +19,13 @@ int main(){
     std::cout << "Anouncing my IP address" << std::endl;
     int i = 0;
     std::thread t(network::anounceMyIp, true);
-    sleep(20);
+    
+
+    std::string u;
+    std::cin >> u;
+    while (u != "exit"){
+        std::cin >> u;
+    }
 
     network::del.store(true);
     t.join();
