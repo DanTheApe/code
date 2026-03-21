@@ -41,7 +41,7 @@ std::string network::anounceMyIp(bool b){
     dst.sin_port = htons(50000);
     inet_pton(AF_INET, "192.168.41.255", &dst.sin_addr);
     // PRESENCE|-|username|ip-address
-    std::string msg = "PRESENCE|-|DAN|" + getMyIp();
+    std::string msg = "PRESENCE|-|BIG|" + getMyIp();
     if (b){
         while (!network::del) {
             ssize_t n = sendto(s, msg.c_str(), msg.size(), 0, reinterpret_cast<sockaddr*>(&dst), sizeof(dst));
