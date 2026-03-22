@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <atomic> // AI sugestion for thread safety
+#include <vector>
 
 #include <cstring>
 #include <unistd.h>
@@ -14,7 +15,28 @@
 #include <chrono>
 
 namespace network {
+    enum class MsgType{
+    PRESENCE,
+    ROOM_ANNOUNCE,
+    INVITE,
+    CHAT,
+    UNKNOWN
+    };
+
+    enum Fildindex{
+    TYPE = 0,
+    ROOM = 1,
+    USERNAME = 2,
+    PAYLOAD = 3
+    };
+
     extern std::atomic_bool del;
+
     std::string getMyIp();
     std::string anounceMyIp(bool s);
+    std::vector<std::string> parseMessage(const std::string& msg);
+    std::vector<std::vector<std::string>> listen(bool onlyPresence);
+    MsgType toMsgType(const std::string& s);
+    std::vector<std::string> parseMessage(const std::string& msg);
+
 }

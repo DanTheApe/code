@@ -1,4 +1,5 @@
 #include "020_netverk.hpp"
+#include "010_app.hpp"
 
 #include <iostream>
 
@@ -19,7 +20,17 @@ int main(){
     std::cout << "Anouncing my IP address" << std::endl;
     int i = 0;
     std::thread t(network::anounceMyIp, true);
+    std::thread l(network::listen, true);
+    std::string anounceMsg = network::anounceMyIp(false);
+    std::cout << "Anounce message: " << anounceMsg << std::endl;
     
+    std::string msg = network::anounceMyIp(false);
+    std::vector<std::string> parts = network::parseMessage(msg);
+    for (const auto& part : parts) {
+        std::cout << "Part: " << part << std::endl;
+    }
+
+    app::run();
 
     std::string u;
     std::cin >> u;
@@ -29,5 +40,6 @@ int main(){
 
     network::del.store(true);
     t.join();
+    l.join();
     return 0;
 }
