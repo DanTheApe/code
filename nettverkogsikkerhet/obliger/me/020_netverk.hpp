@@ -35,7 +35,7 @@ namespace network {
     std::string getMyIp();
     std::string anounceMyIp(bool s);
     std::vector<std::string> parseMessage(const std::string& msg);
-    std::vector<std::vector<std::string>> listen(bool onlyPresence);
+    std::vector<std::vector<std::string>> listen(bool onlyPresence, bool b);
     MsgType toMsgType(const std::string& s);
     std::vector<std::string> parseMessage(const std::string& msg);
 

@@ -54,7 +54,7 @@ std::string network::anounceMyIp(bool b)
     std::string msg = "PRESENCE|-|BIG|" + getMyIp();
     if (b)
     {
-        while (!network::del)
+        while (!network::del.load()) // AI sead .load() is safer. Had it as !network::del before.
         {
             ssize_t n = sendto(s, msg.c_str(), msg.size(), 0, reinterpret_cast<sockaddr *>(&dst), sizeof(dst));
             if (n < 0)
@@ -93,7 +93,7 @@ std::vector<std::string> network::parseMessage(const std::string &msg)
 
     std::vector<std::string> parts;
     int start = 0;
-    int pos = clean.find('|');
+    int pos = clean.find('|'); // Using what teatcher showed.
 
     while (pos != std::string::npos)
     {
@@ -110,19 +110,19 @@ std::vector<std::string> network::parseMessage(const std::string &msg)
     return parts;
 }
 
-std::vector<std::vector<std::string>> network::listen(bool onlyPresence)
+std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
 {
     std::vector<std::vector<std::string>> messages;
 
     int s = socket(AF_INET, SOCK_DGRAM, 0);
-    if (s < 0)
+    if (s < 0) // Reused what AI showed me. Incase of error.
     {
         perror("socket");
         return messages;
     }
 
     int reuse = 1;
-    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) // same here.
     {
         perror("setsockopt SO_REUSEADDR");
         close(s);
@@ -132,7 +132,7 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence)
     timeval tv{};
     tv.tv_sec = 1;
     tv.tv_usec = 0;
-    if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
+    if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) // same here.
     {
         perror("setsockopt SO_RCVTIMEO");
         close(s);
@@ -144,7 +144,7 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence)
     local.sin_port = htons(50000);
     local.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    if (bind(s, reinterpret_cast<sockaddr *>(&local), sizeof(local)) < 0)
+    if (bind(s, reinterpret_cast<sockaddr *>(&local), sizeof(local)) < 0) // same here.
     {
         perror("bind");
         close(s);
@@ -153,7 +153,17 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence)
 
     while (!network::del.load())
     {
-        char buf[2048];
+        int i = 0;
+        if (!b && i == 1)
+        {
+            break;
+        }
+        if (!b)
+        {
+            i++;
+        }
+
+        char buf[2048]; // Just put a limit. AI sead it was safer.
         sockaddr_in src{};
         socklen_t srcLen = sizeof(src);
 
@@ -161,7 +171,7 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence)
             s, buf, sizeof(buf) - 1, 0,
             reinterpret_cast<sockaddr *>(&src), &srcLen);
 
-        if (n < 0)
+        if (n < 0) // same here.
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
             {
@@ -173,6 +183,14 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence)
 
         buf[n] = '\0';
         std::vector<std::string> parts = parseMessage(std::string(buf));
+        
+        /*
+        for (const auto &part : parts)
+        {
+            std::cout << "Part: " << part << std::endl;
+        }
+        */
+
         if (parts.size() != 4)
         {
             continue;
@@ -192,6 +210,7 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence)
                 << "PRESENCE user=" << parts[USERNAME]
                 << " ip=" << parts[PAYLOAD] << std::endl;
         }
+        
     }
 
     close(s);

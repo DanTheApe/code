@@ -12,7 +12,8 @@
 #include <thread>
 #include <chrono>
 
-int main(){
+int main()
+{
     std::cout << "START" << std::endl;
     std::cout << "Geting my IP address" << std::endl;
     std::string ip = network::getMyIp();
@@ -20,13 +21,15 @@ int main(){
     std::cout << "Anouncing my IP address" << std::endl;
     int i = 0;
     std::thread t(network::anounceMyIp, true);
-    std::thread l(network::listen, true);
+    std::thread l(network::listen, true, true);
+
     std::string anounceMsg = network::anounceMyIp(false);
     std::cout << "Anounce message: " << anounceMsg << std::endl;
-    
+
     std::string msg = network::anounceMyIp(false);
     std::vector<std::string> parts = network::parseMessage(msg);
-    for (const auto& part : parts) {
+    for (const auto &part : parts)
+    {
         std::cout << "Part: " << part << std::endl;
     }
 
@@ -34,7 +37,8 @@ int main(){
 
     std::string u;
     std::cin >> u;
-    while (u != "exit"){
+    while (u != "exit")
+    {
         std::cin >> u;
     }
 
