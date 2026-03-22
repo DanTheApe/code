@@ -37,6 +37,8 @@ namespace network {
     std::vector<std::string> parseMessage(const std::string& msg);
     std::vector<std::vector<std::string>> listen(bool onlyPresence, bool b);
     MsgType toMsgType(const std::string& s);
-    std::vector<std::string> parseMessage(const std::string& msg);
+    std::vector<std::string> getActiveUsers();
+    void removeInactiveUsers(int maxS = 30);
+    bool sendUSNChat(const std::string& room, const std::string& msg);
 
 }

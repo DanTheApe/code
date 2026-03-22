@@ -1,5 +1,23 @@
 #include "020_netverk.hpp"
+
+#include <unordered_map>
+#include <mutex>
+#include <ctime>
+
 std::atomic_bool network::del{false};
+
+namespace
+{ // maKES IT PRIVATE FOR THIS .CCP.
+
+    struct UserInfo
+    {
+        std::string ip;
+        std::time_t lastSeen;
+    };
+
+    std::mutex usersMutex;
+    std::unordered_map<std::string, UserInfo> activeUsers;
+}
 
 std::string network::getMyIp()
 {
@@ -153,16 +171,6 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
 
     while (!network::del.load())
     {
-        int i = 0;
-        if (!b && i == 1)
-        {
-            break;
-        }
-        if (!b)
-        {
-            i++;
-        }
-
         char buf[2048]; // Just put a limit. AI sead it was safer.
         sockaddr_in src{};
         socklen_t srcLen = sizeof(src);
@@ -183,8 +191,8 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
 
         buf[n] = '\0';
         std::vector<std::string> parts = parseMessage(std::string(buf));
-        
-        /*
+
+        /* // For testing.
         for (const auto &part : parts)
         {
             std::cout << "Part: " << part << std::endl;
@@ -202,6 +210,26 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
             continue;
         }
 
+        if (t == MsgType::PRESENCE)
+        {
+            const std::string &username = parts[USERNAME];
+            const std::string &ip = parts[PAYLOAD];
+
+            {
+                std::lock_guard<std::mutex> lock(usersMutex);
+                activeUsers[username] = {ip, std::time(nullptr)};
+            }
+
+            std::cout << "PRESENCE user=" << username << " ip=" << ip << std::endl;
+        }
+
+        if (t == MsgType::CHAT && parts[ROOM] == "USN Chat")
+        {
+            std::cout << "[USN Chat] " << parts[USERNAME] << ": " << parts[PAYLOAD] << std::endl;
+        }
+
+        removeInactiveUsers(30);
+
         messages.push_back(parts);
 
         if (t == MsgType::PRESENCE)
@@ -210,9 +238,104 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
                 << "PRESENCE user=" << parts[USERNAME]
                 << " ip=" << parts[PAYLOAD] << std::endl;
         }
-        
+        if (!b)
+        {
+            break;
+        }
     }
 
     close(s);
     return messages;
+}
+
+std::vector<std::string> network::getActiveUsers()
+{
+    std::lock_guard<std::mutex> lock(usersMutex);
+    std::vector<std::string> out;
+    out.reserve(activeUsers.size());
+
+    for (const auto &entry : activeUsers)
+    {
+        const std::string &user = entry.first;
+        const std::string &ip = entry.second.ip;
+        out.push_back(user + "|" + ip);
+    }
+    return out;
+}
+
+void network::removeInactiveUsers(int maxS)
+{
+    const std::time_t now = std::time(nullptr);
+    std::lock_guard<std::mutex> lock(usersMutex);
+
+    for (auto it = activeUsers.begin(); it != activeUsers.end();)
+    {
+        if (now - it->second.lastSeen > maxS)
+        {
+            std::cout << "Removing inactive user: " << it->first << std::endl;
+            it = activeUsers.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+}
+
+bool network::sendUSNChat(const std::string &username, const std::string &text)
+{
+    if (username.empty() || text.empty())
+    {
+        return false;
+    }
+
+    if (username.find('|') != std::string::npos || text.find('|') != std::string::npos)
+    {
+        return false;
+    }
+
+    int s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s < 0)
+    {
+        perror("socket");
+        return false;
+    }
+
+    int enable = 1;
+    if (setsockopt(s, SOL_SOCKET, SO_BROADCAST, &enable, sizeof(enable)) < 0)
+    {
+        perror("setsockopt SO_BROADCAST");
+        close(s);
+        return false;
+    }
+
+    sockaddr_in dst{};
+    dst.sin_family = AF_INET;
+    dst.sin_port = htons(50000);
+    if (inet_pton(AF_INET, "255.255.255.255", &dst.sin_addr) != 1)
+    {
+        perror("inet_pton");
+        close(s);
+        return false;
+    }
+
+    std::string wire = "CHAT|USN Chat|" + username + "|" + text + "\n";
+
+    ssize_t n = sendto(
+        s,
+        wire.c_str(),
+        wire.size(),
+        0,
+        reinterpret_cast<sockaddr *>(&dst),
+        sizeof(dst));
+
+    if (n < 0 || static_cast<size_t>(n) != wire.size())
+    {
+        perror("sendto");
+        close(s);
+        return false;
+    }
+
+    close(s);
+    return true;
 }

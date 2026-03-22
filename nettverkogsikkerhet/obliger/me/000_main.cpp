@@ -21,7 +21,7 @@ int main()
     std::cout << "Anouncing my IP address" << std::endl;
     int i = 0;
     std::thread t(network::anounceMyIp, true);
-    std::thread l(network::listen, true, true);
+    std::thread l(network::listen, false, true);
 
     std::string anounceMsg = network::anounceMyIp(false);
     std::cout << "Anounce message: " << anounceMsg << std::endl;
