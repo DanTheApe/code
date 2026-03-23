@@ -8,13 +8,13 @@ namespace
     enum class State
     {
         IDLE,
-        RUNNING,
+        RUNNING_UDP,
         STOPPED
     };
 
     enum class Command
     {
-        START,
+        STARTU,
         STOP,
         HELP,
         SEND,
@@ -42,8 +42,8 @@ namespace
             args.erase(0, 1);
         }
 
-        if (cmd == "start")
-            return Command::START;
+        if (cmd == "startu")
+            return Command::STARTU;
         if (cmd == "stop")
             return Command::STOP;
         if (cmd == "help")
@@ -66,7 +66,7 @@ namespace
     void printHelp()
     {
         std::cout << "Commands:\n"
-                  << "  start                 - move to RUNNING state\n"
+                  << "  startu                 - move to RUNNING_UDP state\n"
                   << "  stop                  - stop application\n"
                   << "  send <text>           - send broadcast chat message\n"
                   << "  open <room>           - create/open a multicast room\n"
@@ -89,7 +89,7 @@ int app::run()
         {
         case State::IDLE:
         {
-            std::cout << "[IDLE] Type 'start' or 'help': ";
+            std::cout << "[IDLE] Type 'startu' or 'help': ";
             std::string line;
             if (!std::getline(std::cin, line))
             {
@@ -101,9 +101,9 @@ int app::run()
             Command cmd = parseCommand(line, args);
             switch (cmd)
             {
-            case Command::START:
-                state = State::RUNNING;
-                std::cout << "App state -> RUNNING\n";
+            case Command::STARTU:
+                state = State::RUNNING_UDP;
+                std::cout << "App state -> RUNNING_UDP\n";
                 break;
             case Command::STOP:
                 state = State::STOPPED;
@@ -114,15 +114,15 @@ int app::run()
             case Command::EMPTY:
                 break;
             default:
-                std::cout << "Invalid command in IDLE. Try 'start' or 'help'.\n";
+                std::cout << "Invalid command in IDLE. Try 'startu' or 'help'.\n";
                 break;
             }
             break;
         }
 
-        case State::RUNNING:
+        case State::RUNNING_UDP:
         {
-            std::cout << "[RUNNING] Enter command ('help' for list): ";
+            std::cout << "[RUNNING_UDP] Enter command ('help' for list): ";
             std::string line;
             if (!std::getline(std::cin, line))
             {
@@ -256,8 +256,8 @@ int app::run()
             case Command::STOP:
                 state = State::STOPPED;
                 break;
-            case Command::START:
-                std::cout << "Already RUNNING.\n";
+            case Command::STARTU:
+                std::cout << "Already RUNNING_UDP.\n";
                 break;
             case Command::EMPTY:
                 break;

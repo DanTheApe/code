@@ -440,9 +440,7 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
 
         if (t == MsgType::PRESENCE)
         {
-            std::cout
-                << "PRESENCE user=" << parts[USERNAME]
-                << " ip=" << parts[PAYLOAD] << std::endl;
+            //std::cout << "PRESENCE user=" << parts[USERNAME] << " ip=" << parts[PAYLOAD] << std::endl;
         }
         if (!b)
         {
