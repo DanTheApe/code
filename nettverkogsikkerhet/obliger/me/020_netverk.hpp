@@ -14,6 +14,10 @@
 #include <thread>
 #include <chrono>
 
+#include <unordered_map>
+#include <mutex>
+#include <ctime>
+
 namespace network {
     enum class MsgType{
     PRESENCE,
@@ -30,7 +34,10 @@ namespace network {
     PAYLOAD = 3
     };
 
+    extern std::string myUsername;
+
     extern std::atomic_bool del;
+    std::string getUsername();
 
     std::string getMyIp();
     std::string anounceMyIp(bool s);
@@ -39,6 +46,11 @@ namespace network {
     MsgType toMsgType(const std::string& s);
     std::vector<std::string> getActiveUsers();
     void removeInactiveUsers(int maxS = 30);
-    bool sendUSNChat(const std::string& room, const std::string& msg);
+    bool sendUSNChat(const std::string& username, const std::string& text);
+
+    bool createOpenRoom(const std::string& room);
+    bool joinOpenRoom(const std::string& room);
+    bool leaveOpenRoom(const std::string& room);
+    bool sendOpenRoomMessage(const std::string& room, const std::string& msg);
 
 }

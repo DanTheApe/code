@@ -19,7 +19,6 @@ int main()
     std::string ip = network::getMyIp();
     std::cout << "My IP address is: " << ip << std::endl;
     std::cout << "Anouncing my IP address" << std::endl;
-    int i = 0;
     std::thread t(network::anounceMyIp, true);
     std::thread l(network::listen, false, true);
 
@@ -34,13 +33,6 @@ int main()
     }
 
     app::run();
-
-    std::string u;
-    std::cin >> u;
-    while (u != "exit")
-    {
-        std::cin >> u;
-    }
 
     network::del.store(true);
     t.join();

@@ -18,6 +18,7 @@ namespace
         STOP,
         HELP,
         SEND,
+        OPEN,
         USERS,
         JOIN,
         LEAVE,
@@ -49,6 +50,8 @@ namespace
             return Command::HELP;
         if (cmd == "send")
             return Command::SEND;
+        if (cmd == "open")
+            return Command::OPEN;
         if (cmd == "users")
             return Command::USERS;
         if (cmd == "join")
@@ -66,6 +69,7 @@ namespace
                   << "  start                 - move to RUNNING state\n"
                   << "  stop                  - stop application\n"
                   << "  send <text>           - send broadcast chat message\n"
+                  << "  open <room>           - create/open a multicast room\n"
                   << "  users                 - show active users\n"
                   << "  join <room>           - join multicast room\n"
                   << "  leave <room>          - leave multicast room\n"
@@ -137,9 +141,26 @@ int app::run()
                 }
                 else
                 {
-                    if (!network::sendUSNChat("BIG", args))
+                    if (!network::sendUSNChat(network::getUsername(), args))
                     {
                         std::cout << "Failed to send message.\n";
+                    }
+                }
+                break;
+            case Command::OPEN:
+                if (args.empty())
+                {
+                    std::cout << "Usage: open <room>\n";
+                }
+                else
+                {
+                    if (!network::createOpenRoom(args))
+                    {
+                        std::cout << "Failed to create room.\n";
+                    }
+                    else
+                    {
+                        std::cout << "Open room announced: " << args << "\n";
                     }
                 }
                 break;
@@ -168,7 +189,14 @@ int app::run()
                 }
                 else
                 {
-                    std::cout << "JOIN -> " << args << "\n";
+                    if (!network::joinOpenRoom(args))
+                    {
+                        std::cout << "Failed to join room.\n";
+                    }
+                    else
+                    {
+                        std::cout << "Joined room: " << args << "\n";
+                    }
                 }
                 break;
             case Command::LEAVE:
@@ -178,7 +206,14 @@ int app::run()
                 }
                 else
                 {
-                    std::cout << "LEAVE -> " << args << "\n";
+                    if (!network::leaveOpenRoom(args))
+                    {
+                        std::cout << "Failed to leave room.\n";
+                    }
+                    else
+                    {
+                        std::cout << "Left room: " << args << "\n";
+                    }
                 }
                 break;
             case Command::MCAST:
@@ -188,7 +223,31 @@ int app::run()
                 }
                 else
                 {
-                    std::cout << "MCAST -> " << args << "\n";
+                    std::istringstream iss(args);
+                    std::string room;
+                    if (!(iss >> room))
+                    {
+                        std::cout << "Usage: mcast <room> <text>\n";
+                        break;
+                    }
+
+                    std::string text;
+                    std::getline(iss, text);
+                    if (!text.empty() && text.front() == ' ')
+                    {
+                        text.erase(0, 1);
+                    }
+
+                    if (text.empty())
+                    {
+                        std::cout << "Usage: mcast <room> <text>\n";
+                        break;
+                    }
+
+                    if (!network::sendOpenRoomMessage(room, text))
+                    {
+                        std::cout << "Failed to send multicast message.\n";
+                    }
                 }
                 break;
             case Command::HELP:

@@ -1,10 +1,9 @@
 #include "020_netverk.hpp"
 
-#include <unordered_map>
-#include <mutex>
-#include <ctime>
+#include <set>
 
 std::atomic_bool network::del{false};
+std::string network::myUsername = "BiG";
 
 namespace
 { // maKES IT PRIVATE FOR THIS .CCP.
@@ -17,6 +16,106 @@ namespace
 
     std::mutex usersMutex;
     std::unordered_map<std::string, UserInfo> activeUsers;
+
+    std::mutex roomsMutex;
+    std::set<std::string> joinedOpenRooms;
+    std::set<std::string> ownedOpenRooms;
+
+    std::mutex listenSocketMutex;
+    int listenSocketFd = -1;
+
+    std::mutex announceThreadMutex;
+    std::thread roomAnnounceThread;
+    bool roomAnnounceRunning = false;
+
+    bool isValidRoomName(const std::string &room)
+    {
+        return !room.empty() && room.size() <= 32 && room.find('|') == std::string::npos;
+    }
+
+    bool sendBroadcastMessage(const std::string &wire)
+    {
+        int s = socket(AF_INET, SOCK_DGRAM, 0);
+        if (s < 0)
+        {
+            perror("socket");
+            return false;
+        }
+
+        int enable = 1;
+        if (setsockopt(s, SOL_SOCKET, SO_BROADCAST, &enable, sizeof(enable)) < 0)
+        {
+            perror("setsockopt SO_BROADCAST");
+            close(s);
+            return false;
+        }
+
+        sockaddr_in dst{};
+        dst.sin_family = AF_INET;
+        dst.sin_port = htons(50000);
+        if (inet_pton(AF_INET, "255.255.255.255", &dst.sin_addr) != 1)
+        {
+            perror("inet_pton");
+            close(s);
+            return false;
+        }
+
+        const ssize_t n = sendto(
+            s,
+            wire.c_str(),
+            wire.size(),
+            0,
+            reinterpret_cast<sockaddr *>(&dst),
+            sizeof(dst));
+
+        if (n < 0 || static_cast<size_t>(n) != wire.size())
+        {
+            perror("sendto");
+            close(s);
+            return false;
+        }
+
+        close(s);
+        return true;
+    }
+
+    void roomAnnounceLoop()
+    {
+        while (!network::del.load())
+        {
+            std::vector<std::string> roomsToSend;
+            {
+                std::lock_guard<std::mutex> lock(roomsMutex);
+                roomsToSend.assign(ownedOpenRooms.begin(), ownedOpenRooms.end());
+            }
+
+            for (const auto &room : roomsToSend)
+            {
+                const std::string wire = "ROOM_ANNOUNCE|" + room + "|" + network::getUsername() + "|OPEN\n";
+                sendBroadcastMessage(wire);
+            }
+
+            sleep(10);
+        }
+    }
+
+    void ensureRoomAnnounceThreadRunning()
+    {
+        std::lock_guard<std::mutex> lock(announceThreadMutex);
+        if (roomAnnounceRunning)
+        {
+            return;
+        }
+
+        roomAnnounceRunning = true;
+        roomAnnounceThread = std::thread(roomAnnounceLoop);
+        roomAnnounceThread.detach();
+    }
+}
+
+std::string network::getUsername()
+{
+    return myUsername;
 }
 
 std::string network::getMyIp()
@@ -69,7 +168,7 @@ std::string network::anounceMyIp(bool b)
     dst.sin_port = htons(50000);
     inet_pton(AF_INET, "192.168.41.255", &dst.sin_addr);
     // PRESENCE|-|username|ip-address
-    std::string msg = "PRESENCE|-|BIG|" + getMyIp();
+    std::string msg = "PRESENCE|-|" + getUsername() + "|" + getMyIp();
     if (b)
     {
         while (!network::del.load()) // AI sead .load() is safer. Had it as !network::del before.
@@ -169,6 +268,11 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
         return messages;
     }
 
+    {
+        std::lock_guard<std::mutex> lock(listenSocketMutex);
+        listenSocketFd = s;
+    }
+
     while (!network::del.load())
     {
         char buf[2048]; // Just put a limit. AI sead it was safer.
@@ -228,6 +332,24 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
             std::cout << "[USN Chat] " << parts[USERNAME] << ": " << parts[PAYLOAD] << std::endl;
         }
 
+        if (t == MsgType::ROOM_ANNOUNCE && parts[PAYLOAD] == "OPEN")
+        {
+            std::cout << "[OPEN ROOM] " << parts[ROOM] << " owner=" << parts[USERNAME] << std::endl;
+        }
+
+        if (t == MsgType::CHAT && parts[ROOM] != "USN Chat")
+        {
+            bool shouldPrint = false;
+            {
+                std::lock_guard<std::mutex> lock(roomsMutex);
+                shouldPrint = joinedOpenRooms.find(parts[ROOM]) != joinedOpenRooms.end();
+            }
+            if (shouldPrint)
+            {
+                std::cout << "[" << parts[ROOM] << "] " << parts[USERNAME] << ": " << parts[PAYLOAD] << std::endl;
+            }
+        }
+
         removeInactiveUsers(30);
 
         messages.push_back(parts);
@@ -245,6 +367,15 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
     }
 
     close(s);
+
+    {
+        std::lock_guard<std::mutex> lock(listenSocketMutex);
+        if (listenSocketFd == s)
+        {
+            listenSocketFd = -1;
+        }
+    }
+
     return messages;
 }
 
@@ -321,6 +452,171 @@ bool network::sendUSNChat(const std::string &username, const std::string &text)
 
     std::string wire = "CHAT|USN Chat|" + username + "|" + text + "\n";
 
+    ssize_t n = sendto(
+        s,
+        wire.c_str(),
+        wire.size(),
+        0,
+        reinterpret_cast<sockaddr *>(&dst),
+        sizeof(dst));
+
+    if (n < 0 || static_cast<size_t>(n) != wire.size())
+    {
+        perror("sendto");
+        close(s);
+        return false;
+    }
+
+    close(s);
+    return true;
+}
+
+bool network::createOpenRoom(const std::string &room)
+{
+    if (!isValidRoomName(room))
+    {
+        return false;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(roomsMutex);
+        ownedOpenRooms.insert(room);
+    }
+
+    ensureRoomAnnounceThreadRunning();
+
+    const std::string wire = "ROOM_ANNOUNCE|" + room + "|" + getUsername() + "|OPEN\n";
+    return sendBroadcastMessage(wire);
+}
+
+bool network::joinOpenRoom(const std::string &room)
+{
+    if (!isValidRoomName(room))
+    {
+        return false;
+    }
+
+    bool firstJoinedRoom = false;
+    {
+        std::lock_guard<std::mutex> roomLock(roomsMutex);
+        if (joinedOpenRooms.find(room) != joinedOpenRooms.end())
+        {
+            return true;
+        }
+        firstJoinedRoom = joinedOpenRooms.empty();
+        joinedOpenRooms.insert(room);
+    }
+
+    if (!firstJoinedRoom)
+    {
+        return true;
+    }
+
+    std::lock_guard<std::mutex> lock(listenSocketMutex);
+    if (listenSocketFd < 0)
+    {
+        std::cerr << "listen socket is not ready\n";
+        std::lock_guard<std::mutex> roomLock(roomsMutex);
+        joinedOpenRooms.erase(room);
+        return false;
+    }
+
+    ip_mreq mreq{};
+    if (inet_pton(AF_INET, "239.0.0.1", &mreq.imr_multiaddr) != 1)
+    {
+        perror("inet_pton");
+        return false;
+    }
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+
+    if (setsockopt(listenSocketFd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+    {
+        perror("setsockopt IP_ADD_MEMBERSHIP");
+        std::lock_guard<std::mutex> roomLock(roomsMutex);
+        joinedOpenRooms.erase(room);
+        return false;
+    }
+
+    return true;
+}
+
+bool network::leaveOpenRoom(const std::string &room)
+{
+    if (!isValidRoomName(room))
+    {
+        return false;
+    }
+
+    bool shouldDropMembership = false;
+    {
+        std::lock_guard<std::mutex> roomLock(roomsMutex);
+        const auto it = joinedOpenRooms.find(room);
+        if (it == joinedOpenRooms.end())
+        {
+            return true;
+        }
+        joinedOpenRooms.erase(it);
+        shouldDropMembership = joinedOpenRooms.empty();
+    }
+
+    if (!shouldDropMembership)
+    {
+        return true;
+    }
+
+    std::lock_guard<std::mutex> lock(listenSocketMutex);
+    if (listenSocketFd < 0)
+    {
+        return true;
+    }
+
+    ip_mreq mreq{};
+    if (inet_pton(AF_INET, "239.0.0.1", &mreq.imr_multiaddr) != 1)
+    {
+        perror("inet_pton");
+        return false;
+    }
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+
+    if (setsockopt(listenSocketFd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+    {
+        perror("setsockopt IP_DROP_MEMBERSHIP");
+        std::lock_guard<std::mutex> roomLock(roomsMutex);
+        joinedOpenRooms.insert(room);
+        return false;
+    }
+
+    return true;
+}
+
+bool network::sendOpenRoomMessage(const std::string &room, const std::string &msg)
+{
+    if (room.empty() || msg.empty())
+    {
+        return false;
+    }
+
+    int s = socket(AF_INET, SOCK_DGRAM, 0);
+
+    unsigned char ttl = 1;
+    if (setsockopt(s, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)) < 0)
+    {
+        perror("setsockopt IP_MULTICAST_TTL");
+        close(s);
+        return false;
+    }
+
+    sockaddr_in dst{};
+    dst.sin_family = AF_INET;
+    dst.sin_port = htons(50000);
+    if (inet_pton(AF_INET, "239.0.0.1", &dst.sin_addr) != 1)
+    {
+        perror("inet_pton");
+        close(s);
+        return false;
+    }
+
+    std::string wire = "CHAT|" + room + "|" + getUsername() + "|" + msg + "\n";
     ssize_t n = sendto(
         s,
         wire.c_str(),
