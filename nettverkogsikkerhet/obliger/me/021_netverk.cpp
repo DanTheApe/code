@@ -1,6 +1,7 @@
 #include "020_netverk.hpp"
 
 #include <set>
+#include <ifaddrs.h>
 
 std::atomic_bool network::del{false};
 std::string network::myUsername = "BiG";
@@ -53,7 +54,8 @@ namespace
         sockaddr_in dst{};
         dst.sin_family = AF_INET;
         dst.sin_port = htons(50000);
-        if (inet_pton(AF_INET, "255.255.255.255", &dst.sin_addr) != 1)
+        std::string broadcastAddr = network::getBroadcastAddress();
+        if (inet_pton(AF_INET, broadcastAddr.c_str(), &dst.sin_addr) != 1)
         {
             perror("inet_pton");
             close(s);
@@ -146,6 +148,87 @@ std::string network::getMyIp()
     return mrip;
 }
 
+std::string network::getBroadcastAddress()
+{
+    struct ifaddrs *ifaddr = nullptr;
+    if (getifaddrs(&ifaddr) == -1)
+    {
+        perror("getifaddrs");
+        return "255.255.255.255";
+    }
+
+    std::string myIp = getMyIp();
+    std::string broadcastAddr = "255.255.255.255";
+
+    for (struct ifaddrs *ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next)
+    {
+        if (ifa->ifa_addr == nullptr)
+            continue;
+
+        if (ifa->ifa_addr->sa_family != AF_INET)
+            continue;
+
+        struct sockaddr_in *addr = (struct sockaddr_in *)ifa->ifa_addr;
+        struct sockaddr_in *netmask = (struct sockaddr_in *)ifa->ifa_netmask;
+
+        char ipStr[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &addr->sin_addr, ipStr, INET_ADDRSTRLEN);
+
+        if (myIp == ipStr)
+        {
+            uint32_t ip = addr->sin_addr.s_addr;
+            uint32_t mask = netmask->sin_addr.s_addr;
+            uint32_t broadcast = ip | ~mask;
+
+            struct in_addr broadcastAddr_in;
+            broadcastAddr_in.s_addr = broadcast;
+            inet_ntop(AF_INET, &broadcastAddr_in, ipStr, INET_ADDRSTRLEN);
+            broadcastAddr = ipStr;
+            break;
+        }
+    }
+
+    freeifaddrs(ifaddr);
+    return broadcastAddr;
+}
+
+in_addr network::getMulticastInterface()
+{
+    struct ifaddrs *ifaddr = nullptr;
+    in_addr result{};
+    result.s_addr = htonl(INADDR_ANY);
+
+    if (getifaddrs(&ifaddr) == -1)
+    {
+        perror("getifaddrs");
+        return result;
+    }
+
+    std::string myIp = getMyIp();
+
+    for (struct ifaddrs *ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next)
+    {
+        if (ifa->ifa_addr == nullptr)
+            continue;
+
+        if (ifa->ifa_addr->sa_family != AF_INET)
+            continue;
+
+        struct sockaddr_in *addr = (struct sockaddr_in *)ifa->ifa_addr;
+        char ipStr[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &addr->sin_addr, ipStr, INET_ADDRSTRLEN);
+
+        if (myIp == ipStr)
+        {
+            result = addr->sin_addr;
+            break;
+        }
+    }
+
+    freeifaddrs(ifaddr);
+    return result;
+}
+
 std::string network::anounceMyIp(bool b)
 {
     int s = socket(AF_INET, SOCK_DGRAM, 0);
@@ -166,7 +249,8 @@ std::string network::anounceMyIp(bool b)
     sockaddr_in dst{};
     dst.sin_family = AF_INET;
     dst.sin_port = htons(50000);
-    inet_pton(AF_INET, "192.168.41.255", &dst.sin_addr);
+    std::string broadcastAddr = getBroadcastAddress();
+    inet_pton(AF_INET, broadcastAddr.c_str(), &dst.sin_addr);
     // PRESENCE|-|username|ip-address
     std::string msg = "PRESENCE|-|" + getUsername() + "|" + getMyIp();
     if (b)
@@ -324,7 +408,7 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
                 activeUsers[username] = {ip, std::time(nullptr)};
             }
 
-            std::cout << "PRESENCE user=" << username << " ip=" << ip << std::endl;
+            //std::cout << "PRESENCE user=" << username << " ip=" << ip << std::endl;
         }
 
         if (t == MsgType::CHAT && parts[ROOM] == "USN Chat")
@@ -443,7 +527,8 @@ bool network::sendUSNChat(const std::string &username, const std::string &text)
     sockaddr_in dst{};
     dst.sin_family = AF_INET;
     dst.sin_port = htons(50000);
-    if (inet_pton(AF_INET, "255.255.255.255", &dst.sin_addr) != 1)
+    std::string broadcastAddr = getBroadcastAddress();
+    if (inet_pton(AF_INET, broadcastAddr.c_str(), &dst.sin_addr) != 1)
     {
         perror("inet_pton");
         close(s);
@@ -527,7 +612,7 @@ bool network::joinOpenRoom(const std::string &room)
         perror("inet_pton");
         return false;
     }
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    mreq.imr_interface = network::getMulticastInterface();
 
     if (setsockopt(listenSocketFd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
     {
@@ -576,7 +661,7 @@ bool network::leaveOpenRoom(const std::string &room)
         perror("inet_pton");
         return false;
     }
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    mreq.imr_interface = network::getMulticastInterface();
 
     if (setsockopt(listenSocketFd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
     {
@@ -602,6 +687,14 @@ bool network::sendOpenRoomMessage(const std::string &room, const std::string &ms
     if (setsockopt(s, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)) < 0)
     {
         perror("setsockopt IP_MULTICAST_TTL");
+        close(s);
+        return false;
+    }
+
+    in_addr mcastIf = network::getMulticastInterface();
+    if (setsockopt(s, IPPROTO_IP, IP_MULTICAST_IF, &mcastIf, sizeof(mcastIf)) < 0)
+    {
+        perror("setsockopt IP_MULTICAST_IF");
         close(s);
         return false;
     }
