@@ -1,7 +1,5 @@
 #include "010_app.hpp"
 
-#include <sstream>
-
 namespace
 {
 
