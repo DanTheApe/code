@@ -1,5 +1,6 @@
 #include "020_netverk.hpp"
 #include "010_app.hpp"
+#include "030_TCP.hpp"
 
 #include <iostream>
 
@@ -14,27 +15,30 @@
 
 int main()
 {
+    network net;
+    tcp tcpObj(net.getUsername());
+
     std::cout << "START" << std::endl;
     std::cout << "Geting my IP address" << std::endl;
-    std::string ip = network::getMyIp();
+    std::string ip = net.getMyIp();
     std::cout << "My IP address is: " << ip << std::endl;
     std::cout << "Anouncing my IP address" << std::endl;
-    std::thread t(network::anounceMyIp, true);
-    std::thread l(network::listen, false, true);
+    std::thread t(&network::anounceMyIp, &net, true);
+    std::thread l(&network::listen, &net, false, true);
 
-    std::string anounceMsg = network::anounceMyIp(false);
+    std::string anounceMsg = net.anounceMyIp(false);
     std::cout << "Anounce message: " << anounceMsg << std::endl;
 
-    std::string msg = network::anounceMyIp(false);
-    std::vector<std::string> parts = network::parseMessage(msg);
+    std::string msg = net.anounceMyIp(false);
+    std::vector<std::string> parts = net.parseMessage(msg);
     for (const auto &part : parts)
     {
         std::cout << "Part: " << part << std::endl;
     }
 
-    app::run();
+    app::run(net);
 
-    network::del.store(true);
+    net.stop();
     t.join();
     l.join();
     return 0;

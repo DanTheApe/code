@@ -13,6 +13,8 @@
 #include <cstring>
 #include <atomic>
 
+#include "040_felles.hpp"
+
 // TYPE|ROOM|USERNAME|PAYLOAD
 // PORT 50001
 // Guaranteed Rooms (TCP, Invitation via UDP Broadcast)
@@ -27,19 +29,17 @@ private:
     std::string room;
     std::string username;
     std::string payload;
-    std::string tcpport = "50001";
-    std::string multicastip = "239.0.0.1";
-    std::string udpport = "50000";
-    std::string brodcastip = "192.168.1.255";
+    std::string tcpport = std::to_string(felles::tcpPort);
+    std::string multicastip = felles::multicastIp;
+    std::string udpport = std::to_string(felles::udpPort);
+    std::string brodcastip = felles::broadcastDefaultIp;
     std::string myip;
     std::unordered_map<std::string, int> roomSockets; // roomName -> socket
     std::mutex roomSocketsMutex;
 
-    std::string getMyIp();
-
 public:
     // default
-    tcp(std::string username) : username(std::move(username)) {myip = getMyIp();};
+    tcp(std::string username);
     ~tcp();
 
     void startServerRoom(const std::string &roomName);

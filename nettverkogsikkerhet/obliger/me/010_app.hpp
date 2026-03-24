@@ -7,5 +7,5 @@
 #include <vector>
 
 namespace app {
-    int run();
+    int run(network &net);
 }

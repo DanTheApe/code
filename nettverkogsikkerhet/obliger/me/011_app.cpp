@@ -79,7 +79,7 @@ namespace
 
 } // namespace
 
-int app::run()
+int app::run(network &net)
 {
     State state = State::IDLE;
 
@@ -141,7 +141,7 @@ int app::run()
                 }
                 else
                 {
-                    if (!network::sendUSNChat(network::getUsername(), args))
+                    if (!net.sendUSNChat(net.getUsername(), args))
                     {
                         std::cout << "Failed to send message.\n";
                     }
@@ -154,7 +154,7 @@ int app::run()
                 }
                 else
                 {
-                    if (!network::createOpenRoom(args))
+                    if (!net.createOpenRoom(args))
                     {
                         std::cout << "Failed to create room.\n";
                     }
@@ -166,7 +166,7 @@ int app::run()
                 break;
             case Command::USERS:
             {
-                auto users = network::getActiveUsers();
+                auto users = net.getActiveUsers();
                 if (users.empty())
                 {
                     std::cout << "No active users.\n";
@@ -189,7 +189,7 @@ int app::run()
                 }
                 else
                 {
-                    if (!network::joinOpenRoom(args))
+                    if (!net.joinOpenRoom(args))
                     {
                         std::cout << "Failed to join room.\n";
                     }
@@ -206,7 +206,7 @@ int app::run()
                 }
                 else
                 {
-                    if (!network::leaveOpenRoom(args))
+                    if (!net.leaveOpenRoom(args))
                     {
                         std::cout << "Failed to leave room.\n";
                     }
@@ -244,7 +244,7 @@ int app::run()
                         break;
                     }
 
-                    if (!network::sendOpenRoomMessage(room, text))
+                    if (!net.sendOpenRoomMessage(room, text))
                     {
                         std::cout << "Failed to send multicast message.\n";
                     }

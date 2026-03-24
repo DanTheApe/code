@@ -1,164 +1,152 @@
 #include "020_netverk.hpp"
-
-#include <set>
+#include "040_felles.hpp"
 #include <ifaddrs.h>
 
-std::atomic_bool network::del{false};
-std::string network::myUsername = "BiG";
-
 namespace
-{ // maKES IT PRIVATE FOR THIS .CCP.
-
-    struct UserInfo
+{
+    bool applyUdpLocalOnlyTtl(int s)
     {
-        std::string ip;
-        std::time_t lastSeen;
-    };
-
-    std::mutex usersMutex;
-    std::unordered_map<std::string, UserInfo> activeUsers;
-
-    std::mutex roomsMutex;
-    std::set<std::string> joinedOpenRooms;
-    std::set<std::string> ownedOpenRooms;
-
-    std::mutex listenSocketMutex;
-    int listenSocketFd = -1;
-
-    std::mutex announceThreadMutex;
-    std::thread roomAnnounceThread;
-    bool roomAnnounceRunning = false;
-
-    bool isValidRoomName(const std::string &room)
-    {
-        return !room.empty() && room.size() <= 32 && room.find('|') == std::string::npos;
-    }
-
-    bool sendBroadcastMessage(const std::string &wire)
-    {
-        int s = socket(AF_INET, SOCK_DGRAM, 0);
-        if (s < 0)
+        int ttl = felles::localTtl;
+        if (setsockopt(s, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0)
         {
-            perror("socket");
+            perror("setsockopt IP_TTL");
             return false;
         }
-
-        int enable = 1;
-        if (setsockopt(s, SOL_SOCKET, SO_BROADCAST, &enable, sizeof(enable)) < 0)
-        {
-            perror("setsockopt SO_BROADCAST");
-            close(s);
-            return false;
-        }
-
-        sockaddr_in dst{};
-        dst.sin_family = AF_INET;
-        dst.sin_port = htons(50000);
-        std::string broadcastAddr = network::getBroadcastAddress();
-        if (inet_pton(AF_INET, broadcastAddr.c_str(), &dst.sin_addr) != 1)
-        {
-            perror("inet_pton");
-            close(s);
-            return false;
-        }
-
-        const ssize_t n = sendto(
-            s,
-            wire.c_str(),
-            wire.size(),
-            0,
-            reinterpret_cast<sockaddr *>(&dst),
-            sizeof(dst));
-
-        if (n < 0 || static_cast<size_t>(n) != wire.size())
-        {
-            perror("sendto");
-            close(s);
-            return false;
-        }
-
-        close(s);
         return true;
     }
-
-    void roomAnnounceLoop()
-    {
-        while (!network::del.load())
-        {
-            std::vector<std::string> roomsToSend;
-            {
-                std::lock_guard<std::mutex> lock(roomsMutex);
-                roomsToSend.assign(ownedOpenRooms.begin(), ownedOpenRooms.end());
-            }
-
-            for (const auto &room : roomsToSend)
-            {
-                const std::string wire = "ROOM_ANNOUNCE|" + room + "|" + network::getUsername() + "|OPEN\n";
-                sendBroadcastMessage(wire);
-            }
-
-            sleep(10);
-        }
-    }
-
-    void ensureRoomAnnounceThreadRunning()
-    {
-        std::lock_guard<std::mutex> lock(announceThreadMutex);
-        if (roomAnnounceRunning)
-        {
-            return;
-        }
-
-        roomAnnounceRunning = true;
-        roomAnnounceThread = std::thread(roomAnnounceLoop);
-        roomAnnounceThread.detach();
-    }
 }
 
-std::string network::getUsername()
+network::network()
+    : myIp(felles::getMyIp())
 {
-    return myUsername;
 }
 
-std::string network::getMyIp()
+network::~network()
+{
+    stop();
+
+    std::lock_guard<std::mutex> lock(announceThreadMutex);
+    if (roomAnnounceThread.joinable())
+    {
+        roomAnnounceThread.join();
+    }
+}
+
+std::string network::getUsername() const
+{
+    return felles::getUsername();
+}
+
+std::string network::getMyIp() const
+{
+    return myIp;
+}
+
+void network::stop()
+{
+    del.store(true);
+}
+
+bool network::isValidRoomName(const std::string &room) const
+{
+    return !room.empty() && room.size() <= 32 && room.find('|') == std::string::npos;
+}
+
+bool network::sendBroadcastMessage(const std::string &wire) const
 {
     int s = socket(AF_INET, SOCK_DGRAM, 0);
-
-    sockaddr_in remote{};
-    remote.sin_family = AF_INET;
-    remote.sin_port = htons(53);
-    inet_pton(AF_INET, "8.8.8.8", &remote.sin_addr);
-
-    connect(s, (sockaddr *)&remote, sizeof(remote));
-
-    sockaddr_in local{};
-    socklen_t len = sizeof(local);
-    getsockname(s, (sockaddr *)&local, &len);
-
-    char ip[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &local.sin_addr, ip, sizeof(ip));
-    std::string mrip(ip);
-
-    if (mrip == "0.0.0.0")
+    if (s < 0)
     {
-        mrip = "192.168.41.22";
-    } // IF it don't fined my ip I just hardcode it. Problem on IRI-LAb
+        perror("socket");
+        return false;
+    }
+
+    int enable = 1;
+    if (setsockopt(s, SOL_SOCKET, SO_BROADCAST, &enable, sizeof(enable)) < 0)
+    {
+        perror("setsockopt SO_BROADCAST");
+        close(s);
+        return false;
+    }
+
+    if (!applyUdpLocalOnlyTtl(s))
+    {
+        close(s);
+        return false;
+    }
+
+    sockaddr_in dst{};
+    dst.sin_family = AF_INET;
+    dst.sin_port = htons(felles::udpPort);
+    std::string broadcastAddr = getBroadcastAddress();
+    if (inet_pton(AF_INET, broadcastAddr.c_str(), &dst.sin_addr) != 1)
+    {
+        perror("inet_pton");
+        close(s);
+        return false;
+    }
+
+    const ssize_t n = sendto(
+        s,
+        wire.c_str(),
+        wire.size(),
+        0,
+        reinterpret_cast<sockaddr *>(&dst),
+        sizeof(dst));
+
+    if (n < 0 || static_cast<size_t>(n) != wire.size())
+    {
+        perror("sendto");
+        close(s);
+        return false;
+    }
 
     close(s);
-    return mrip;
+    return true;
 }
 
-std::string network::getBroadcastAddress()
+void network::roomAnnounceLoop()
+{
+    while (!del.load())
+    {
+        std::vector<std::string> roomsToSend;
+        {
+            std::lock_guard<std::mutex> lock(roomsMutex);
+            roomsToSend.assign(ownedOpenRooms.begin(), ownedOpenRooms.end());
+        }
+
+        for (const auto &room : roomsToSend)
+        {
+            const std::string wire = std::string(felles::msgRoomAnnounce) + "|" + room + "|" + getUsername() + "|" + felles::payloadOpen + "\n";
+            sendBroadcastMessage(wire);
+        }
+
+        sleep(10);
+    }
+}
+
+void network::ensureRoomAnnounceThreadRunning()
+{
+    std::lock_guard<std::mutex> lock(announceThreadMutex);
+    if (roomAnnounceRunning)
+    {
+        return;
+    }
+
+    roomAnnounceRunning = true;
+    roomAnnounceThread = std::thread(&network::roomAnnounceLoop, this);
+}
+
+std::string network::getBroadcastAddress() const
 {
     struct ifaddrs *ifaddr = nullptr;
     if (getifaddrs(&ifaddr) == -1)
     {
         perror("getifaddrs");
-        return "255.255.255.255";
+        return felles::broadcastDefaultIp;
     }
 
-    std::string myIp = getMyIp();
-    std::string broadcastAddr = "255.255.255.255";
+    std::string broadcastAddr = felles::broadcastDefaultIp;
 
     for (struct ifaddrs *ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next)
     {
@@ -192,7 +180,7 @@ std::string network::getBroadcastAddress()
     return broadcastAddr;
 }
 
-in_addr network::getMulticastInterface()
+in_addr network::getMulticastInterface() const
 {
     struct ifaddrs *ifaddr = nullptr;
     in_addr result{};
@@ -203,8 +191,6 @@ in_addr network::getMulticastInterface()
         perror("getifaddrs");
         return result;
     }
-
-    std::string myIp = getMyIp();
 
     for (struct ifaddrs *ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next)
     {
@@ -236,79 +222,64 @@ std::string network::anounceMyIp(bool b)
     {
         perror("socket");
         return "";
-    } // AI
+    }
 
     int enable = 1;
     if (setsockopt(s, SOL_SOCKET, SO_BROADCAST, &enable, sizeof(enable)) < 0)
-    { // AI
+    {
         perror("setsockopt SO_BROADCAST");
+        close(s);
+        return "";
+    }
+
+    if (!applyUdpLocalOnlyTtl(s))
+    {
         close(s);
         return "";
     }
 
     sockaddr_in dst{};
     dst.sin_family = AF_INET;
-    dst.sin_port = htons(50000);
+    dst.sin_port = htons(felles::udpPort);
     std::string broadcastAddr = getBroadcastAddress();
     inet_pton(AF_INET, broadcastAddr.c_str(), &dst.sin_addr);
-    // PRESENCE|-|username|ip-address
-    std::string msg = "PRESENCE|-|" + getUsername() + "|" + getMyIp();
+
+    std::string msg = std::string(felles::msgPresence) + "|-|" + getUsername() + "|" + getMyIp();
     if (b)
     {
-        while (!network::del.load()) // AI sead .load() is safer. Had it as !network::del before.
+        while (!del.load())
         {
             ssize_t n = sendto(s, msg.c_str(), msg.size(), 0, reinterpret_cast<sockaddr *>(&dst), sizeof(dst));
             if (n < 0)
-                perror("sendto"); // AI
+                perror("sendto");
             sleep(10);
         }
     }
+
     ssize_t n = sendto(s, msg.c_str(), msg.size(), 0, reinterpret_cast<sockaddr *>(&dst), sizeof(dst));
     if (n < 0)
-        perror("sendto"); // AI
+        perror("sendto");
+
     close(s);
     return msg;
-    // AI brukt til å finne feil. Hadde satt inet_pton til 255.255.255.255 som ikke fungerete, men 192.168.41.255 fungrete.
 }
 
-network::MsgType network::toMsgType(const std::string &s)
+network::MsgType network::toMsgType(const std::string &s) const
 {
-    if (s == "PRESENCE")
+    if (s == felles::msgPresence)
         return MsgType::PRESENCE;
-    if (s == "ROOM_ANNOUNCE")
+    if (s == felles::msgRoomAnnounce)
         return MsgType::ROOM_ANNOUNCE;
-    if (s == "INVITE")
+    if (s == felles::msgInvite)
         return MsgType::INVITE;
-    if (s == "CHAT")
+    if (s == felles::msgChat)
         return MsgType::CHAT;
     return MsgType::UNKNOWN;
 }
 
-std::vector<std::string> network::parseMessage(const std::string &msg)
+std::vector<std::string> network::parseMessage(const std::string &msg) const
 {
-    std::string clean = msg;
-    while (!clean.empty() && (clean.back() == '\n' || clean.back() == '\r'))
-    {
-        clean.pop_back();
-    }
-
-    std::vector<std::string> parts;
-    int start = 0;
-    int pos = clean.find('|'); // Using what teatcher showed.
-
-    while (pos != std::string::npos)
-    {
-        parts.push_back(clean.substr(start, pos - start));
-        start = pos + 1;
-        pos = clean.find('|', start);
-    }
-    parts.push_back(clean.substr(start));
-
-    if (parts.size() != 4) // if not 4 just throw it.
-    {
-        return {};
-    }
-    return parts;
+    return felles::parseMessage(msg);
 }
 
 std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
@@ -316,14 +287,14 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
     std::vector<std::vector<std::string>> messages;
 
     int s = socket(AF_INET, SOCK_DGRAM, 0);
-    if (s < 0) // Reused what AI showed me. Incase of error.
+    if (s < 0)
     {
         perror("socket");
         return messages;
     }
 
     int reuse = 1;
-    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) // same here.
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
     {
         perror("setsockopt SO_REUSEADDR");
         close(s);
@@ -333,7 +304,7 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
     timeval tv{};
     tv.tv_sec = 1;
     tv.tv_usec = 0;
-    if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) // same here.
+    if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
     {
         perror("setsockopt SO_RCVTIMEO");
         close(s);
@@ -342,10 +313,10 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
 
     sockaddr_in local{};
     local.sin_family = AF_INET;
-    local.sin_port = htons(50000);
+    local.sin_port = htons(felles::udpPort);
     local.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    if (bind(s, reinterpret_cast<sockaddr *>(&local), sizeof(local)) < 0) // same here.
+    if (bind(s, reinterpret_cast<sockaddr *>(&local), sizeof(local)) < 0)
     {
         perror("bind");
         close(s);
@@ -357,9 +328,9 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
         listenSocketFd = s;
     }
 
-    while (!network::del.load())
+    while (!del.load())
     {
-        char buf[2048]; // Just put a limit. AI sead it was safer.
+        char buf[2048];
         sockaddr_in src{};
         socklen_t srcLen = sizeof(src);
 
@@ -367,7 +338,7 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
             s, buf, sizeof(buf) - 1, 0,
             reinterpret_cast<sockaddr *>(&src), &srcLen);
 
-        if (n < 0) // same here.
+        if (n < 0)
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
             {
@@ -379,13 +350,6 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
 
         buf[n] = '\0';
         std::vector<std::string> parts = parseMessage(std::string(buf));
-
-        /* // For testing.
-        for (const auto &part : parts)
-        {
-            std::cout << "Part: " << part << std::endl;
-        }
-        */
 
         if (parts.size() != 4)
         {
@@ -407,21 +371,19 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
                 std::lock_guard<std::mutex> lock(usersMutex);
                 activeUsers[username] = {ip, std::time(nullptr)};
             }
-
-            //std::cout << "PRESENCE user=" << username << " ip=" << ip << std::endl;
         }
 
-        if (t == MsgType::CHAT && parts[ROOM] == "USN Chat")
+        if (t == MsgType::CHAT && parts[ROOM] == felles::roomUsnChat)
         {
-            std::cout << "[USN Chat] " << parts[USERNAME] << ": " << parts[PAYLOAD] << std::endl;
+            std::cout << "[" << felles::roomUsnChat << "] " << parts[USERNAME] << ": " << parts[PAYLOAD] << std::endl;
         }
 
-        if (t == MsgType::ROOM_ANNOUNCE && parts[PAYLOAD] == "OPEN")
+        if (t == MsgType::ROOM_ANNOUNCE && parts[PAYLOAD] == felles::payloadOpen)
         {
             std::cout << "[OPEN ROOM] " << parts[ROOM] << " owner=" << parts[USERNAME] << std::endl;
         }
 
-        if (t == MsgType::CHAT && parts[ROOM] != "USN Chat")
+        if (t == MsgType::CHAT && parts[ROOM] != felles::roomUsnChat)
         {
             bool shouldPrint = false;
             {
@@ -438,10 +400,6 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
 
         messages.push_back(parts);
 
-        if (t == MsgType::PRESENCE)
-        {
-            //std::cout << "PRESENCE user=" << parts[USERNAME] << " ip=" << parts[PAYLOAD] << std::endl;
-        }
         if (!b)
         {
             break;
@@ -522,9 +480,15 @@ bool network::sendUSNChat(const std::string &username, const std::string &text)
         return false;
     }
 
+    if (!applyUdpLocalOnlyTtl(s))
+    {
+        close(s);
+        return false;
+    }
+
     sockaddr_in dst{};
     dst.sin_family = AF_INET;
-    dst.sin_port = htons(50000);
+    dst.sin_port = htons(felles::udpPort);
     std::string broadcastAddr = getBroadcastAddress();
     if (inet_pton(AF_INET, broadcastAddr.c_str(), &dst.sin_addr) != 1)
     {
@@ -533,7 +497,7 @@ bool network::sendUSNChat(const std::string &username, const std::string &text)
         return false;
     }
 
-    std::string wire = "CHAT|USN Chat|" + username + "|" + text + "\n";
+    std::string wire = std::string(felles::msgChat) + "|" + felles::roomUsnChat + "|" + username + "|" + text + "\n";
 
     ssize_t n = sendto(
         s,
@@ -568,7 +532,7 @@ bool network::createOpenRoom(const std::string &room)
 
     ensureRoomAnnounceThreadRunning();
 
-    const std::string wire = "ROOM_ANNOUNCE|" + room + "|" + getUsername() + "|OPEN\n";
+    const std::string wire = std::string(felles::msgRoomAnnounce) + "|" + room + "|" + getUsername() + "|" + felles::payloadOpen + "\n";
     return sendBroadcastMessage(wire);
 }
 
@@ -605,12 +569,12 @@ bool network::joinOpenRoom(const std::string &room)
     }
 
     ip_mreq mreq{};
-    if (inet_pton(AF_INET, "239.0.0.1", &mreq.imr_multiaddr) != 1)
+    if (inet_pton(AF_INET, felles::multicastIp, &mreq.imr_multiaddr) != 1)
     {
         perror("inet_pton");
         return false;
     }
-    mreq.imr_interface = network::getMulticastInterface();
+    mreq.imr_interface = getMulticastInterface();
 
     if (setsockopt(listenSocketFd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
     {
@@ -654,12 +618,12 @@ bool network::leaveOpenRoom(const std::string &room)
     }
 
     ip_mreq mreq{};
-    if (inet_pton(AF_INET, "239.0.0.1", &mreq.imr_multiaddr) != 1)
+    if (inet_pton(AF_INET, felles::multicastIp, &mreq.imr_multiaddr) != 1)
     {
         perror("inet_pton");
         return false;
     }
-    mreq.imr_interface = network::getMulticastInterface();
+    mreq.imr_interface = getMulticastInterface();
 
     if (setsockopt(listenSocketFd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
     {
@@ -680,8 +644,13 @@ bool network::sendOpenRoomMessage(const std::string &room, const std::string &ms
     }
 
     int s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s < 0)
+    {
+        perror("socket");
+        return false;
+    }
 
-    unsigned char ttl = 1;
+    unsigned char ttl = felles::localTtl;
     if (setsockopt(s, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)) < 0)
     {
         perror("setsockopt IP_MULTICAST_TTL");
@@ -689,7 +658,7 @@ bool network::sendOpenRoomMessage(const std::string &room, const std::string &ms
         return false;
     }
 
-    in_addr mcastIf = network::getMulticastInterface();
+    in_addr mcastIf = getMulticastInterface();
     if (setsockopt(s, IPPROTO_IP, IP_MULTICAST_IF, &mcastIf, sizeof(mcastIf)) < 0)
     {
         perror("setsockopt IP_MULTICAST_IF");
@@ -699,15 +668,15 @@ bool network::sendOpenRoomMessage(const std::string &room, const std::string &ms
 
     sockaddr_in dst{};
     dst.sin_family = AF_INET;
-    dst.sin_port = htons(50000);
-    if (inet_pton(AF_INET, "239.0.0.1", &dst.sin_addr) != 1)
+    dst.sin_port = htons(felles::udpPort);
+    if (inet_pton(AF_INET, felles::multicastIp, &dst.sin_addr) != 1)
     {
         perror("inet_pton");
         close(s);
         return false;
     }
 
-    std::string wire = "CHAT|" + room + "|" + getUsername() + "|" + msg + "\n";
+    std::string wire = std::string(felles::msgChat) + "|" + room + "|" + getUsername() + "|" + msg + "\n";
     ssize_t n = sendto(
         s,
         wire.c_str(),
