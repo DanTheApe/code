@@ -5,7 +5,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-std::string felles::myUsername = "DAN";
+std::string felles::myUsername = "BiG";
 std::atomic_bool felles::del{false};
 
 std::string felles::getUsername()
