@@ -21,6 +21,8 @@
 
 #include <cerrno>
 
+#include "040_felles.hpp"
+
 class network {
 private:
     struct UserInfo
@@ -63,23 +65,9 @@ private:
     bool sendUnicastMessage(const std::string &wire, const std::string &destIp) const;
     void roomAnnounceLoop();
     void ensureRoomAnnounceThreadRunning();
+    felles::MsgType toMsgType(const std::string& s) const;
     
 public:
-    enum class MsgType{
-    PRESENCE,
-    ROOM_ANNOUNCE,
-    INVITE,
-    CHAT,
-    UNKNOWN
-    };
-
-    enum FieldIndex{
-    TYPE = 0,
-    ROOM = 1,
-    USERNAME = 2,
-    PAYLOAD = 3
-    };
-
     network();
     ~network();
 
@@ -91,7 +79,6 @@ public:
     std::string anounceMyIp(bool s);
     std::vector<std::string> parseMessage(const std::string& msg) const;
     std::vector<std::vector<std::string>> listen(bool onlyPresence, bool b);
-    MsgType toMsgType(const std::string& s) const;
     std::vector<std::string> getActiveUsers();
     void removeInactiveUsers(int maxS = 30);
     bool sendUSNChat(const std::string& username, const std::string& text);

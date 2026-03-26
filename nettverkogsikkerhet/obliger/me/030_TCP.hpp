@@ -29,10 +29,6 @@ private:
     std::string room;
     std::string username;
     std::string payload;
-    std::string tcpport = std::to_string(felles::tcpPort);
-    std::string multicastip = felles::multicastIp;
-    std::string udpport = std::to_string(felles::udpPort);
-    std::string brodcastip = felles::broadcastDefaultIp;
     std::string myip;
     std::unordered_map<std::string, int> roomSockets; // roomName -> socket
     std::mutex roomSocketsMutex;

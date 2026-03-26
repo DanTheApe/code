@@ -3,13 +3,10 @@
 #include <ifaddrs.h>
 #include <algorithm>
 
-using felles::del;
-
 namespace
 {
-    bool applyUdpLocalOnlyTtl(int s)
+    bool applyUdpLocalOnlyTtl(int s, int ttl)
     {
-        int ttl = felles::localTtl;
         if (setsockopt(s, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0)
         {
             perror("setsockopt IP_TTL");
@@ -22,7 +19,7 @@ namespace
 network::network()
     : myIp(felles::getMyIp())
 {
-    del.store(false);
+    felles::del.store(false);
 }
 
 network::~network()
@@ -48,12 +45,12 @@ std::string network::getMyIp() const
 
 void network::stop()
 {
-    del.store(true);
+    felles::del.store(true);
 }
 
 bool network::isValidRoomName(const std::string &room) const
 {
-    return !room.empty() && room.size() <= 32 && room.find('|') == std::string::npos;
+    return felles::isValidRoomName(room);
 }
 
 bool network::sendBroadcastMessage(const std::string &wire) const
@@ -73,7 +70,7 @@ bool network::sendBroadcastMessage(const std::string &wire) const
         return false;
     }
 
-    if (!applyUdpLocalOnlyTtl(s))
+    if (!applyUdpLocalOnlyTtl(s, felles::localTtl))
     {
         close(s);
         return false;
@@ -98,7 +95,7 @@ bool network::sendBroadcastMessage(const std::string &wire) const
         reinterpret_cast<sockaddr *>(&dst),
         sizeof(dst));
 
-    if (n < 0 || n != static_cast<int>(wire.size()))
+    if (!felles::isSendComplete(n, wire.size()))
     {
         perror("sendto");
         close(s);
@@ -111,7 +108,7 @@ bool network::sendBroadcastMessage(const std::string &wire) const
 
 void network::roomAnnounceLoop()
 {
-    while (!del.load())
+    while (!felles::del.load())
     {
         std::vector<std::string> openRoomsToSend;
         std::vector<std::string> guaranteedRoomsToSend;
@@ -136,7 +133,7 @@ void network::roomAnnounceLoop()
             sendBroadcastMessage(wire);
         }
 
-        for (int i = 0; i < 10 && !del.load(); ++i)
+        for (int i = 0; i < 10 && !felles::del.load(); ++i)
         {
             sleep(1);
         }
@@ -250,7 +247,7 @@ std::string network::anounceMyIp(bool b)
         return "";
     }
 
-    if (!applyUdpLocalOnlyTtl(s))
+    if (!applyUdpLocalOnlyTtl(s, felles::localTtl))
     {
         close(s);
         return "";
@@ -265,12 +262,12 @@ std::string network::anounceMyIp(bool b)
     std::string msg = std::string(felles::msgPresence) + "|-|" + getUsername() + "|" + getMyIp();
     if (b)
     {
-        while (!del.load())
+        while (!felles::del.load())
         {
             int n = sendto(s, msg.c_str(), msg.size(), 0, reinterpret_cast<sockaddr *>(&dst), sizeof(dst));
             if (n < 0)
                 perror("sendto");
-            for (int i = 0; i < 10 && !del.load(); ++i)
+            for (int i = 0; i < 10 && !felles::del.load(); ++i)
             {
                 sleep(1);
             }
@@ -285,17 +282,17 @@ std::string network::anounceMyIp(bool b)
     return msg;
 }
 
-network::MsgType network::toMsgType(const std::string &s) const
+felles::MsgType network::toMsgType(const std::string &s) const
 {
     if (s == felles::msgPresence)
-        return MsgType::PRESENCE;
+        return felles::MsgType::PRESENCE;
     if (s == felles::msgRoomAnnounce)
-        return MsgType::ROOM_ANNOUNCE;
+        return felles::MsgType::ROOM_ANNOUNCE;
     if (s == felles::msgInvite)
-        return MsgType::INVITE;
+        return felles::MsgType::INVITE;
     if (s == felles::msgChat)
-        return MsgType::CHAT;
-    return MsgType::UNKNOWN;
+        return felles::MsgType::CHAT;
+    return felles::MsgType::UNKNOWN;
 }
 
 std::vector<std::string> network::parseMessage(const std::string &msg) const
@@ -349,7 +346,7 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
         listenSocketFd = s;
     }
 
-    while (!del.load())
+    while (!felles::del.load())
     {
         char buf[2048];
         sockaddr_in src{};
@@ -377,16 +374,16 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
             continue;
         }
 
-        MsgType t = toMsgType(parts[TYPE]);
-        if (onlyPresence && t != MsgType::PRESENCE)
+        felles::MsgType t = toMsgType(parts[felles::TYPE]);
+        if (onlyPresence && t != felles::MsgType::PRESENCE)
         {
             continue;
         }
 
-        if (t == MsgType::PRESENCE)
+        if (t == felles::MsgType::PRESENCE)
         {
-            const std::string &username = parts[USERNAME];
-            const std::string &ip = parts[PAYLOAD];
+            const std::string &username = parts[felles::USERNAME];
+            const std::string &ip = parts[felles::PAYLOAD];
 
             {
                 std::lock_guard<std::mutex> lock(usersMutex);
@@ -394,36 +391,36 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
             }
         }
 
-        if (t == MsgType::INVITE && (parts[PAYLOAD] == felles::payloadTcpPrivate || parts[PAYLOAD] == felles::payloadTcp))
+        if (t == felles::MsgType::INVITE && (parts[felles::PAYLOAD] == felles::payloadTcpPrivate || parts[felles::PAYLOAD] == felles::payloadTcp))
         {
-            std::cout << "[INVITE] " << parts[USERNAME] << " invites you to room: " << parts[ROOM] << " (type: " << parts[PAYLOAD] << ")" << std::endl;
+            std::cout << "[INVITE] " << parts[felles::USERNAME] << " invites you to room: " << parts[felles::ROOM] << " (type: " << parts[felles::PAYLOAD] << ")" << std::endl;
             {
                 std::lock_guard<std::mutex> lock(inviteMutex);
-                pendingInvites.push_back({parts[ROOM], parts[USERNAME]});
+                pendingInvites.push_back({parts[felles::ROOM], parts[felles::USERNAME]});
             }
             continue;
         }
 
-        if (t == MsgType::CHAT && parts[ROOM] == felles::roomUsnChat)
+        if (t == felles::MsgType::CHAT && parts[felles::ROOM] == felles::roomUsnChat)
         {
-            std::cout << "[" << felles::roomUsnChat << "] " << parts[USERNAME] << ": " << parts[PAYLOAD] << std::endl;
+            std::cout << "[" << felles::roomUsnChat << "] " << parts[felles::USERNAME] << ": " << parts[felles::PAYLOAD] << std::endl;
         }
 
-        if (t == MsgType::ROOM_ANNOUNCE && parts[PAYLOAD] == felles::payloadOpen)
+        if (t == felles::MsgType::ROOM_ANNOUNCE && parts[felles::PAYLOAD] == felles::payloadOpen)
         {
-            std::cout << "[OPEN ROOM] " << parts[ROOM] << " owner=" << parts[USERNAME] << std::endl;
+            std::cout << "[OPEN ROOM] " << parts[felles::ROOM] << " owner=" << parts[felles::USERNAME] << std::endl;
         }
 
-        if (t == MsgType::CHAT && parts[ROOM] != felles::roomUsnChat)
+        if (t == felles::MsgType::CHAT && parts[felles::ROOM] != felles::roomUsnChat)
         {
             bool shouldPrint = false;
             {
                 std::lock_guard<std::mutex> lock(roomsMutex);
-                shouldPrint = joinedOpenRooms.find(parts[ROOM]) != joinedOpenRooms.end();
+                shouldPrint = joinedOpenRooms.find(parts[felles::ROOM]) != joinedOpenRooms.end();
             }
             if (shouldPrint)
             {
-                std::cout << "[" << parts[ROOM] << "] " << parts[USERNAME] << ": " << parts[PAYLOAD] << std::endl;
+                std::cout << "[" << parts[felles::ROOM] << "] " << parts[felles::USERNAME] << ": " << parts[felles::PAYLOAD] << std::endl;
             }
         }
 
@@ -486,12 +483,7 @@ void network::removeInactiveUsers(int maxS)
 
 bool network::sendUSNChat(const std::string &username, const std::string &text)
 {
-    if (username.empty() || text.empty())
-    {
-        return false;
-    }
-
-    if (username.find('|') != std::string::npos || text.find('|') != std::string::npos)
+    if (!felles::isNonEmptyNoPipe(username) || !felles::isNonEmptyNoPipe(text))
     {
         return false;
     }
@@ -511,7 +503,7 @@ bool network::sendUSNChat(const std::string &username, const std::string &text)
         return false;
     }
 
-    if (!applyUdpLocalOnlyTtl(s))
+    if (!applyUdpLocalOnlyTtl(s, felles::localTtl))
     {
         close(s);
         return false;
@@ -538,7 +530,7 @@ bool network::sendUSNChat(const std::string &username, const std::string &text)
         reinterpret_cast<sockaddr *>(&dst),
         sizeof(dst));
 
-    if (n < 0 || n != static_cast<int>(wire.size()))
+    if (!felles::isSendComplete(n, wire.size()))
     {
         perror("sendto");
         close(s);
@@ -669,7 +661,7 @@ bool network::leaveOpenRoom(const std::string &room)
 
 bool network::sendOpenRoomMessage(const std::string &room, const std::string &msg)
 {
-    if (room.empty() || msg.empty())
+    if (!felles::isNonEmptyNoPipe(room) || msg.empty())
     {
         return false;
     }
@@ -716,7 +708,7 @@ bool network::sendOpenRoomMessage(const std::string &room, const std::string &ms
         reinterpret_cast<sockaddr *>(&dst),
         sizeof(dst));
 
-    if (n < 0 || n != static_cast<int>(wire.size()))
+    if (!felles::isSendComplete(n, wire.size()))
     {
         perror("sendto");
         close(s);
@@ -809,7 +801,7 @@ bool network::sendUnicastMessage(const std::string &wire, const std::string &des
         return false;
     }
 
-    if (!applyUdpLocalOnlyTtl(s))
+    if (!applyUdpLocalOnlyTtl(s, felles::localTtl))
     {
         close(s);
         return false;
@@ -833,7 +825,7 @@ bool network::sendUnicastMessage(const std::string &wire, const std::string &des
         reinterpret_cast<sockaddr *>(&dst),
         sizeof(dst));
 
-    if (n < 0 || n != static_cast<int>(wire.size()))
+    if (!felles::isSendComplete(n, wire.size()))
     {
         perror("sendto");
         close(s);

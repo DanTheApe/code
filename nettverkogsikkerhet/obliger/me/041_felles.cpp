@@ -8,6 +8,21 @@
 std::string felles::myUsername = "DAN";
 std::atomic_bool felles::del{false};
 
+bool felles::isValidRoomName(const std::string &room)
+{
+    return !room.empty() && room.size() <= 32 && room.find('|') == std::string::npos;
+}
+
+bool felles::isNonEmptyNoPipe(const std::string &value)
+{
+    return !value.empty() && value.find('|') == std::string::npos;
+}
+
+bool felles::isSendComplete(int bytesSent, size_t expectedSize)
+{
+    return bytesSent >= 0 && bytesSent == static_cast<int>(expectedSize);
+}
+
 std::string felles::getUsername()
 {
     return myUsername;

@@ -1,6 +1,7 @@
 #include "020_netverk.hpp"
 #include "010_app.hpp"
 #include "030_TCP.hpp"
+#include "040_felles.hpp"
 
 #include <iostream>
 
@@ -15,6 +16,11 @@
 
 int main()
 {
+    std::cout << "Type your username: ";
+    std::string username;
+    std::getline(std::cin, username);
+    felles::setUsername(username);
+
     network net;
     tcp tcpObj(net.getUsername());
 

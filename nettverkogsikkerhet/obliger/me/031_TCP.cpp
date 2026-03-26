@@ -3,8 +3,6 @@
 
 #include <sys/select.h>
 
-using felles::del;
-
 // TYPE|ROOM|USERNAME|PAYLOAD
 
 tcp::tcp(std::string username)
@@ -44,7 +42,7 @@ void tcp::tcpListen()
 
     std::cout << "TCP server listening on port " << felles::tcpPort << std::endl;
 
-    while (!del.load())
+    while (!felles::del.load())
     {
         fd_set readfds;
         FD_ZERO(&readfds);
@@ -179,7 +177,7 @@ void tcp::sendMessage(const std::string &roomName, const std::string &message)
 
     std::string wire = std::string(felles::msgChat) + "|" + roomName + "|" + username + "|" + message + "\n";
     int n = send(s, wire.c_str(), wire.size(), 0);
-    if (n < 0 || n != static_cast<int>(wire.size()))
+    if (!felles::isSendComplete(n, wire.size()))
     {
         onError("Failed to send TCP message");
     }
