@@ -34,7 +34,6 @@ private:
     std::mutex roomSocketsMutex;
 
 public:
-    // default
     tcp(std::string username);
     ~tcp();
 

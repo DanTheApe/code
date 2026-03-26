@@ -55,8 +55,8 @@ public:
     static bool isValidRoomName(const std::string &room);
     static bool isNonEmptyNoPipe(const std::string &value);
     static bool isSendComplete(int bytesSent, size_t expectedSize);
-    static std::string getUsername();
     static void setUsername(const std::string &username);
+    static std::string getUsername();
     static std::string getMyIp();
     static std::vector<std::string> parseMessage(const std::string &msg);
     static std::string encryptXor(const std::string &plaintext, const std::string &key);
