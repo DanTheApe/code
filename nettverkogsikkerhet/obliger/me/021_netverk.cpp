@@ -1,4 +1,5 @@
 #include "020_netverk.hpp"
+#include "030_TCP.hpp"
 #include "040_felles.hpp"
 #include <ifaddrs.h>
 #include <algorithm>
@@ -732,6 +733,11 @@ bool network::createGuaranteedRoom(const std::string &room)
         guaranteedRoomOwners[room] = getMyIp();
     }
 
+    if (tcpObj)
+    {
+        tcpObj->startServerRoom(room);
+    }
+
     // Broadcast invitation (will be repeated by ensureRoomAnnounceThreadRunning)
     const std::string wire = std::string(felles::msgInvite) + "|" + room + "|" + getUsername() + "|" + felles::payloadTcp + "\n";
     return sendBroadcastMessage(wire);
@@ -748,6 +754,11 @@ bool network::joinGuaranteedRoom(const std::string &room, const std::string &own
         std::lock_guard<std::mutex> lock(guaranteedRoomsMutex);
         joinedGuaranteedRooms.insert(room);
         guaranteedRoomOwners[room] = ownerIp;
+    }
+
+    if (tcpObj)
+    {
+        tcpObj->joinRoom(room, ownerIp);
     }
 
     return true;
@@ -770,9 +781,13 @@ bool network::sendGuaranteedRoomMessage(const std::string &room, const std::stri
         }
     }
 
-    // Message will be sent via TCP by the tcp class
-    // This is a placeholder that validates the room exists
-    return true;
+    if (tcpObj)
+    {
+        tcpObj->sendMessage(room, msg);
+        return true;
+    }
+
+    return false;
 }
 
 bool network::leaveGuaranteedRoom(const std::string &room)
@@ -780,6 +795,11 @@ bool network::leaveGuaranteedRoom(const std::string &room)
     if (!isValidRoomName(room))
     {
         return false;
+    }
+
+    if (tcpObj)
+    {
+        tcpObj->leaveRoom(room);
     }
 
     {
@@ -874,6 +894,11 @@ bool network::createPrivateRoom(const std::string &room, const std::string &invi
         privateRoomKeys[room] = encKey;
     }
 
+    if (tcpObj)
+    {
+        tcpObj->startServerRoom(room);
+    }
+
     std::string wire = std::string(felles::msgInvite) + "|" + room + "|" + getUsername() + "|" + felles::payloadTcpPrivate + "\n";
     return sendUnicastMessage(wire, inviteeIp);
 }
@@ -896,6 +921,11 @@ bool network::acceptPrivateInvite(const std::string &room, const std::string &ow
         std::lock_guard<std::mutex> lock(privateRoomsMutex);
         joinedPrivateRooms.insert(room);
         privateRoomKeys[room] = encKey;
+    }
+
+    if (tcpObj)
+    {
+        tcpObj->joinRoom(room, ownerIp);
     }
 
     {
@@ -929,9 +959,14 @@ bool network::sendPrivateRoomMessage(const std::string &room, const std::string 
 
     std::string wire = std::string(felles::msgChat) + "|" + room + "|" + getUsername() + "|" + msg;
     std::string encrypted = felles::encryptXor(wire, encKey);
-    encrypted += "\n";
 
-    return true;
+    if (tcpObj)
+    {
+        tcpObj->sendMessage(room, encrypted);
+        return true;
+    }
+
+    return false;
 }
 
 bool network::leavePrivateRoom(const std::string &room)
@@ -939,6 +974,11 @@ bool network::leavePrivateRoom(const std::string &room)
     if (!isValidRoomName(room))
     {
         return false;
+    }
+
+    if (tcpObj)
+    {
+        tcpObj->leaveRoom(room);
     }
 
     {

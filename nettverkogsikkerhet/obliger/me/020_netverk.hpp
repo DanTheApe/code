@@ -23,6 +23,8 @@
 
 #include "040_felles.hpp"
 
+class tcp;  // Forward declaration
+
 class network {
 private:
     struct UserInfo
@@ -59,6 +61,8 @@ private:
     std::mutex announceThreadMutex;
     std::thread roomAnnounceThread;
     bool roomAnnounceRunning = false;
+
+    tcp* tcpObj = nullptr;
 
     bool isValidRoomName(const std::string &room) const;
     bool sendBroadcastMessage(const std::string &wire) const;
@@ -99,6 +103,8 @@ public:
     bool leavePrivateRoom(const std::string& room);
     std::vector<std::pair<std::string, std::string>> getPendingInvites();
     void clearInvite(const std::string& room);
+
+    void setTcpObject(tcp* obj) { tcpObj = obj; }
 
     void stop();
 
