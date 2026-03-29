@@ -368,6 +368,8 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
         }
 
         buf[n] = '\0';
+        char srcIp[INET_ADDRSTRLEN] = {0};
+        inet_ntop(AF_INET, &src.sin_addr, srcIp, sizeof(srcIp));
         std::vector<std::string> parts = parseMessage(std::string(buf));
 
         if (parts.size() != 4)
@@ -394,7 +396,12 @@ std::vector<std::vector<std::string>> network::listen(bool onlyPresence, bool b)
 
         if (t == felles::MsgType::INVITE && (parts[felles::PAYLOAD] == felles::payloadTcpPrivate || parts[felles::PAYLOAD] == felles::payloadTcp))
         {
-            std::cout << "[INVITE] " << parts[felles::USERNAME] << " invites you to room: " << parts[felles::ROOM] << " (type: " << parts[felles::PAYLOAD] << ")" << std::endl;
+            std::cout << "[INVITE] " << parts[felles::USERNAME] << " invites you to room: " << parts[felles::ROOM] << " (type: " << parts[felles::PAYLOAD] << ", owner_ip: " << srcIp << ")" << std::endl;
+            if (parts[felles::PAYLOAD] == felles::payloadTcp)
+            {
+                std::lock_guard<std::mutex> lock(guaranteedRoomsMutex);
+                guaranteedRoomOwners[parts[felles::ROOM]] = srcIp;
+            }
             {
                 std::lock_guard<std::mutex> lock(inviteMutex);
                 pendingInvites.push_back({parts[felles::ROOM], parts[felles::USERNAME]});
@@ -738,6 +745,8 @@ bool network::createGuaranteedRoom(const std::string &room)
         tcpObj->startServerRoom(room);
     }
 
+    ensureRoomAnnounceThreadRunning();
+
     // Broadcast invitation (will be repeated by ensureRoomAnnounceThreadRunning)
     const std::string wire = std::string(felles::msgInvite) + "|" + room + "|" + getUsername() + "|" + felles::payloadTcp + "\n";
     return sendBroadcastMessage(wire);
@@ -750,15 +759,37 @@ bool network::joinGuaranteedRoom(const std::string &room, const std::string &own
         return false;
     }
 
+    std::string targetIp = ownerIp;
+    if (targetIp.empty())
+    {
+        std::lock_guard<std::mutex> lock(guaranteedRoomsMutex);
+        auto it = guaranteedRoomOwners.find(room);
+        if (it != guaranteedRoomOwners.end())
+        {
+            targetIp = it->second;
+        }
+    }
+
+    if (targetIp.empty())
+    {
+        std::cerr << "No owner IP known for guaranteed room: " << room << "\n";
+        return false;
+    }
+
+    if (!tcpObj)
+    {
+        return false;
+    }
+
+    if (!tcpObj->joinRoom(room, targetIp))
+    {
+        return false;
+    }
+
     {
         std::lock_guard<std::mutex> lock(guaranteedRoomsMutex);
         joinedGuaranteedRooms.insert(room);
-        guaranteedRoomOwners[room] = ownerIp;
-    }
-
-    if (tcpObj)
-    {
-        tcpObj->joinRoom(room, ownerIp);
+        guaranteedRoomOwners[room] = targetIp;
     }
 
     return true;
@@ -781,13 +812,7 @@ bool network::sendGuaranteedRoomMessage(const std::string &room, const std::stri
         }
     }
 
-    if (tcpObj)
-    {
-        tcpObj->sendMessage(room, msg);
-        return true;
-    }
-
-    return false;
+    return tcpObj ? tcpObj->sendMessage(room, msg) : false;
 }
 
 bool network::leaveGuaranteedRoom(const std::string &room)
@@ -896,7 +921,10 @@ bool network::createPrivateRoom(const std::string &room, const std::string &invi
 
     if (tcpObj)
     {
-        tcpObj->startServerRoom(room);
+        if (!tcpObj->startServerRoom(room))
+        {
+            return false;
+        }
     }
 
     std::string wire = std::string(felles::msgInvite) + "|" + room + "|" + getUsername() + "|" + felles::payloadTcpPrivate + "\n";
@@ -923,9 +951,39 @@ bool network::acceptPrivateInvite(const std::string &room, const std::string &ow
         privateRoomKeys[room] = encKey;
     }
 
-    if (tcpObj)
+    std::string resolvedOwnerIp = ownerIp;
+    if (resolvedOwnerIp.empty())
     {
-        tcpObj->joinRoom(room, ownerIp);
+        std::string inviterUser;
+        {
+            std::lock_guard<std::mutex> lock(inviteMutex);
+            auto it = std::find_if(pendingInvites.begin(), pendingInvites.end(), [&room](const auto &p)
+                                   { return p.first == room; });
+            if (it != pendingInvites.end())
+            {
+                inviterUser = it->second;
+            }
+        }
+
+        if (!inviterUser.empty())
+        {
+            std::lock_guard<std::mutex> lock(usersMutex);
+            auto userIt = activeUsers.find(inviterUser);
+            if (userIt != activeUsers.end())
+            {
+                resolvedOwnerIp = userIt->second.ip;
+            }
+        }
+    }
+
+    if (!tcpObj || resolvedOwnerIp.empty())
+    {
+        return false;
+    }
+
+    if (!tcpObj->joinRoom(room, resolvedOwnerIp))
+    {
+        return false;
     }
 
     {

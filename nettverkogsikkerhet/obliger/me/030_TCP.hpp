@@ -10,6 +10,7 @@
 #include <thread>
 #include <mutex>
 #include <unordered_map>
+#include <unordered_set>
 #include <cstring>
 #include <atomic>
 
@@ -31,18 +32,29 @@ private:
     std::string payload;
     std::string myip;
     std::unordered_map<std::string, int> roomSockets; // roomName -> socket
+    std::unordered_set<std::string> ownedServerRooms;
+    std::unordered_map<std::string, std::vector<int>> roomClients; // roomName -> connected client sockets
+    std::unordered_map<int, std::string> socketToRoom;             // client socket -> roomName
+    std::vector<std::thread> clientThreads;
+    std::unordered_map<std::string, std::thread> roomReceiverThreads; // roomName -> client receiver thread
     std::mutex roomSocketsMutex;
+
+    void handleClientSocket(int clientSocket, sockaddr_in clientAddr);
+    void unregisterClientSocket(int clientSocket);
+    void relayToRoom(const std::string &roomName, const std::string &wire, int excludeSocket);
+    void runRoomReceiver(const std::string &roomName, int socketFd);
+    static bool sendAll(int socketFd, const std::string &wire);
 
 public:
     tcp(std::string username);
     ~tcp();
 
     void tcpListen();
-    void startServerRoom(const std::string &roomName);
+    bool startServerRoom(const std::string &roomName);
     void stopRoom(const std::string &roomName);
-    void joinRoom(const std::string &roomName, const std::string &ownerIp);
+    bool joinRoom(const std::string &roomName, const std::string &ownerIp);
     void leaveRoom(const std::string &roomName);
-    void sendMessage(const std::string &roomName, const std::string &message);
+    bool sendMessage(const std::string &roomName, const std::string &message);
     void onMessageReceived(const std::string &roomName, const std::string &sender, const std::string &message);
     void onClientConnected(const std::string &roomName, const std::string &clientIp);
     void onError(const std::string &errorMessage);

@@ -99,7 +99,7 @@ namespace
                   << "  leave <room>                - leave multicast room\n"
                   << "  mcast <room> <text>         - send multicast chat message\n"
                   << "  goroom <room>               - create guaranteed (TCP) room\n"
-                  << "  gjoin <room> <owner_ip>     - join guaranteed room\n"
+                  << "  gjoin <room> [owner_ip]     - join guaranteed room\n"
                   << "  gmsg <room> <text>          - send message in guaranteed room\n"
                   << "  gleave <room>               - leave guaranteed room\n"
                   << "  invite <user> <room>        - send private room invite\n"
@@ -304,18 +304,20 @@ int app::run(network &net)
             case Command::GJOIN:
                 if (args.empty())
                 {
-                    std::cout << "Usage: gjoin <room> <owner_ip>\n";
+                    std::cout << "Usage: gjoin <room> [owner_ip]\n";
                 }
                 else
                 {
                     std::istringstream iss(args);
                     std::string room;
                     std::string ownerIp;
-                    if (!(iss >> room >> ownerIp))
+                    if (!(iss >> room))
                     {
-                        std::cout << "Usage: gjoin <room> <owner_ip>\n";
+                        std::cout << "Usage: gjoin <room> [owner_ip]\n";
                         break;
                     }
+
+                    iss >> ownerIp;
 
                     if (!net.joinGuaranteedRoom(room, ownerIp))
                     {
