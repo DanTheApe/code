@@ -28,9 +28,9 @@ int main()
     std::cout << "Geting my IP address" << std::endl;
     std::string ip = net.getMyIp();
     std::cout << "My IP address is: " << ip << std::endl;
-    
+
     net.setTcpObject(&tcpObj);
-    
+
     std::cout << "Anouncing my IP address" << std::endl;
     std::thread t(&network::anounceMyIp, &net, true);
     std::thread l(&network::listen, &net, false, true);

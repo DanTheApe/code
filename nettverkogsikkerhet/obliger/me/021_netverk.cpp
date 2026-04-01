@@ -990,7 +990,8 @@ bool network::acceptPrivateInvite(const std::string &room, const std::string &ow
         std::lock_guard<std::mutex> lock(inviteMutex);
         pendingInvites.erase(
             std::remove_if(pendingInvites.begin(), pendingInvites.end(),
-                           [&room](const auto &p) { return p.first == room; }),
+                           [&room](const auto &p)
+                           { return p.first == room; }),
             pendingInvites.end());
     }
 
@@ -1060,6 +1061,7 @@ void network::clearInvite(const std::string &room)
     std::lock_guard<std::mutex> lock(inviteMutex);
     pendingInvites.erase(
         std::remove_if(pendingInvites.begin(), pendingInvites.end(),
-                       [&room](const auto &p) { return p.first == room; }),
+                       [&room](const auto &p)
+                       { return p.first == room; }),
         pendingInvites.end());
 }

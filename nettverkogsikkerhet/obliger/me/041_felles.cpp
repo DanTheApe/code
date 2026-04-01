@@ -5,7 +5,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-std::string felles::myUsername = "DAN";
+std::string felles::myUsername = "dan";
 std::atomic_bool felles::del{false};
 
 bool felles::isValidRoomName(const std::string &room)
@@ -35,6 +35,7 @@ void felles::setUsername(const std::string &username)
 
 std::string felles::getMyIp()
 {
+    // Use a UDP "connect" trick to discover which local interface/IP is used outward.
     int s = socket(AF_INET, SOCK_DGRAM, 0);
 
     sockaddr_in remote{};
@@ -52,6 +53,7 @@ std::string felles::getMyIp()
     inet_ntop(AF_INET, &local.sin_addr, ip, sizeof(ip));
     std::string myIp(ip);
 
+    // Fallback keeps local demos running even if interface discovery fails.
     if (myIp == "0.0.0.0")
     {
         myIp = fallbackLocalIp;
@@ -63,6 +65,7 @@ std::string felles::getMyIp()
 
 std::vector<std::string> felles::parseMessage(const std::string &msg)
 {
+    // Normalize wire input by trimming trailing line endings first.
     std::string clean = msg;
     while (!clean.empty() && (clean.back() == '\n' || clean.back() == '\r'))
     {
@@ -73,6 +76,7 @@ std::vector<std::string> felles::parseMessage(const std::string &msg)
     int start = 0;
     int pos = clean.find('|');
 
+    // Split using '|' because all protocol messages follow TYPE|ROOM|USERNAME|PAYLOAD.
     while (pos != std::string::npos)
     {
         parts.push_back(clean.substr(start, pos - start));
@@ -93,6 +97,7 @@ std::string felles::encryptXor(const std::string &plaintext, const std::string &
     if (key.empty())
         return plaintext;
 
+    // Repeating-key XOR used for lightweight obfuscation in private-room payloads.
     std::string encrypted;
     for (size_t i = 0; i < plaintext.size(); ++i)
     {
@@ -103,5 +108,6 @@ std::string felles::encryptXor(const std::string &plaintext, const std::string &
 
 std::string felles::decryptXor(const std::string &ciphertext, const std::string &key)
 {
+    // XOR is symmetric: same operation decrypts what was encrypted.
     return encryptXor(ciphertext, key);
 }

@@ -52,14 +52,15 @@ tcp::~tcp()
 
 bool tcp::sendAll(int socketFd, const std::string &wire)
 {
+    // TCP send can be partial. loop until all bytes are written.
     size_t total = 0;
     while (total < wire.size())
     {
-    int flags = 0;
+        int flags = 0;
 #ifdef MSG_NOSIGNAL
-    flags |= MSG_NOSIGNAL;
+        flags |= MSG_NOSIGNAL;
 #endif
-    int n = send(socketFd, wire.c_str() + total, wire.size() - total, flags);
+        int n = send(socketFd, wire.c_str() + total, wire.size() - total, flags);
         if (n <= 0)
         {
             return false;
@@ -97,6 +98,7 @@ void tcp::runRoomReceiver(const std::string &roomName, int socketFd)
         buffer[bytesRead] = '\0';
         pending.append(buffer, bytesRead);
 
+        // Read complete protocol lines (newline-delimited) from the receive buffer.
         size_t pos = std::string::npos;
         while ((pos = pending.find('\n')) != std::string::npos)
         {
@@ -119,6 +121,7 @@ void tcp::runRoomReceiver(const std::string &roomName, int socketFd)
                 continue;
             }
 
+            // Deliver only CHAT traffic for the room this receiver is bound to.
             onMessageReceived(parts[felles::ROOM], parts[felles::USERNAME], parts[felles::PAYLOAD]);
         }
     }
@@ -196,6 +199,7 @@ void tcp::handleClientSocket(int clientSocket, sockaddr_in clientAddr)
     auto registerSocketInRoom = [this, clientSocket](const std::string &roomName)
     {
         std::lock_guard<std::mutex> lock(roomSocketsMutex);
+        // Keep both maps in sync: socket -> room and room -> sockets.
         socketToRoom[clientSocket] = roomName;
         auto &clients = roomClients[roomName];
         if (std::find(clients.begin(), clients.end(), clientSocket) == clients.end())
@@ -242,6 +246,7 @@ void tcp::handleClientSocket(int clientSocket, sockaddr_in clientAddr)
 
             if (msgType == "JOIN")
             {
+                // JOIN is a handshake that associates this TCP connection with a room.
                 registerSocketInRoom(roomName);
                 onClientConnected(roomName, ip);
                 continue;
@@ -275,6 +280,7 @@ void tcp::handleClientSocket(int clientSocket, sockaddr_in clientAddr)
 
                 const std::string wire = std::string(felles::msgChat) + "|" + targetRoom + "|" + sender + "|" + msgPayload + "\n";
                 onMessageReceived(targetRoom, sender, msgPayload);
+                // Broadcast to all sockets registered in the room (server-side fanout).
                 relayToRoom(targetRoom, wire, -1);
             }
         }
@@ -388,7 +394,6 @@ void tcp::tcpListen()
             t.join();
         }
     }
-
 }
 
 bool tcp::startServerRoom(const std::string &roomName)

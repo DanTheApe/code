@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <deque>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -19,7 +20,7 @@
 // TYPE|ROOM|USERNAME|PAYLOAD
 // PORT 50001
 // Guaranteed Rooms (TCP, Invitation via UDP Broadcast)
-// INVITE|room-name|owner|TCP_PRIVATE 
+// INVITE|room-name|owner|TCP_PRIVATE
 // MUST listen on TCP port 50001
 // All chat messages over TCP MUST use the same CHAT format: CHAT|room-name|username|message
 // CHAT|room-name|username|message
@@ -58,5 +59,4 @@ public:
     void onMessageReceived(const std::string &roomName, const std::string &sender, const std::string &message);
     void onClientConnected(const std::string &roomName, const std::string &clientIp);
     void onError(const std::string &errorMessage);
-
 };

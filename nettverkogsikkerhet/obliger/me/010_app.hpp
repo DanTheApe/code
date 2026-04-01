@@ -7,6 +7,7 @@
 #include <vector>
 #include <sstream>
 
-namespace app {
+namespace app
+{
     int run(network &net);
 }

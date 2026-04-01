@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <atomic>
+#include <iostream>
 
 class felles
 {
@@ -10,7 +11,7 @@ class felles
     friend class network;
 
 private:
-    static constexpr int localTtl = 1;
+    static constexpr int localTtl = 1; // AI foreslog å bruke constexpr for compile-time constant.
     static constexpr int udpPort = 50000;
     static constexpr int tcpPort = 50001;
 

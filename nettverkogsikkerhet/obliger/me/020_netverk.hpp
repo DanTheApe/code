@@ -4,6 +4,7 @@
 #include <string>
 #include <atomic> // AI sugestion for thread safety
 #include <vector>
+#include <deque>
 
 #include <cstring>
 #include <unistd.h>
@@ -23,9 +24,10 @@
 
 #include "040_felles.hpp"
 
-class tcp;  // Forward declaration
+class tcp; // Forward declaration
 
-class network {
+class network
+{
 private:
     struct UserInfo
     {
@@ -62,15 +64,15 @@ private:
     std::thread roomAnnounceThread;
     bool roomAnnounceRunning = false;
 
-    tcp* tcpObj = nullptr;
+    tcp *tcpObj = nullptr;
 
     bool isValidRoomName(const std::string &room) const;
     bool sendBroadcastMessage(const std::string &wire) const;
     bool sendUnicastMessage(const std::string &wire, const std::string &destIp) const;
     void roomAnnounceLoop();
     void ensureRoomAnnounceThreadRunning();
-    felles::MsgType toMsgType(const std::string& s) const;
-    
+    felles::MsgType toMsgType(const std::string &s) const;
+
 public:
     network();
     ~network();
@@ -81,31 +83,30 @@ public:
     std::string getBroadcastAddress() const;
     in_addr getMulticastInterface() const;
     std::string anounceMyIp(bool s);
-    std::vector<std::string> parseMessage(const std::string& msg) const;
+    std::vector<std::string> parseMessage(const std::string &msg) const;
     std::vector<std::vector<std::string>> listen(bool onlyPresence, bool b);
     std::vector<std::string> getActiveUsers();
     void removeInactiveUsers(int maxS = 30);
-    bool sendUSNChat(const std::string& username, const std::string& text);
+    bool sendUSNChat(const std::string &username, const std::string &text);
 
-    bool createOpenRoom(const std::string& room);
-    bool joinOpenRoom(const std::string& room);
-    bool leaveOpenRoom(const std::string& room);
-    bool sendOpenRoomMessage(const std::string& room, const std::string& msg);
+    bool createOpenRoom(const std::string &room);
+    bool joinOpenRoom(const std::string &room);
+    bool leaveOpenRoom(const std::string &room);
+    bool sendOpenRoomMessage(const std::string &room, const std::string &msg);
 
-    bool createGuaranteedRoom(const std::string& room);
-    bool joinGuaranteedRoom(const std::string& room, const std::string& ownerIp);
-    bool sendGuaranteedRoomMessage(const std::string& room, const std::string& msg);
-    bool leaveGuaranteedRoom(const std::string& room);
+    bool createGuaranteedRoom(const std::string &room);
+    bool joinGuaranteedRoom(const std::string &room, const std::string &ownerIp);
+    bool sendGuaranteedRoomMessage(const std::string &room, const std::string &msg);
+    bool leaveGuaranteedRoom(const std::string &room);
 
-    bool createPrivateRoom(const std::string& room, const std::string& invitedUser);
-    bool acceptPrivateInvite(const std::string& room, const std::string& ownerIp);
-    bool sendPrivateRoomMessage(const std::string& room, const std::string& msg);
-    bool leavePrivateRoom(const std::string& room);
+    bool createPrivateRoom(const std::string &room, const std::string &invitedUser);
+    bool acceptPrivateInvite(const std::string &room, const std::string &ownerIp);
+    bool sendPrivateRoomMessage(const std::string &room, const std::string &msg);
+    bool leavePrivateRoom(const std::string &room);
     std::vector<std::pair<std::string, std::string>> getPendingInvites();
-    void clearInvite(const std::string& room);
+    void clearInvite(const std::string &room);
 
-    void setTcpObject(tcp* obj) { tcpObj = obj; }
+    void setTcpObject(tcp *obj) { tcpObj = obj; }
 
     void stop();
-
 };
