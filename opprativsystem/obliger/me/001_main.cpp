@@ -1,10 +1,7 @@
-#include "010_parent.hpp"
-#include "020_ringbuffer.hpp"
-
-#include <iostream>
+#include "100_parent.hpp"
 
 int main() {
-    std::cout << "Start\n";
-
+    parent system;
+    system.run();
     return 0;
 }
