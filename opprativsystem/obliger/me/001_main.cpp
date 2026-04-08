@@ -1,6 +1,7 @@
 #include "100_parent.hpp"
 
-int main() {
+int main()
+{
     parent system;
     system.run();
     return 0;
