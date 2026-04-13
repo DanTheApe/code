@@ -1,8 +1,8 @@
 #include "200_ringbuffer.hpp"
 
 ringbuffer::ringbuffer(int capacity)
-    : capacity(static_cast<int>(capacity)),
-      buffer(static_cast<int>(capacity)),
+    : capacity(capacity),
+      buffer(capacity),
       head(0),
       tail(0),
       count(0)
