@@ -3,9 +3,9 @@
 #include "200_ringbuffer.hpp"
 
 #include <thread>
-#include <atomic> // stop_flag: which is an atomic boolean to signal threads to stop
+#include <atomic> 
 #include <iostream>
-#include <chrono> // For sleep
+#include <chrono>
 
 class parent
 {

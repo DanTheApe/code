@@ -44,7 +44,7 @@ void parent::consumer_worker(parent *p)
     while (eof_count < 2)
     {
         char ch = p->buf.pop();
-        if (ch == '\x1d' || ch == '|') // ctrl+d eller |
+        if (ch == '\x1d' || ch == '|')
         {
             ++eof_count;
             continue;
@@ -57,9 +57,9 @@ void parent::consumer_worker(parent *p)
 
 void parent::run()
 {
-    keyboard_thread = std::thread(keyboard_worker, this); // Start the keyboard worker thread
-    generator_thread = std::thread(generator_worker, this); // Start the generator worker thread
-    consumer_thread = std::thread(consumer_worker, this); // Start the consumer worker thread
+    keyboard_thread = std::thread(keyboard_worker, this);
+    generator_thread = std::thread(generator_worker, this);
+    consumer_thread = std::thread(consumer_worker, this);
 
     if (keyboard_thread.joinable())
         keyboard_thread.join();

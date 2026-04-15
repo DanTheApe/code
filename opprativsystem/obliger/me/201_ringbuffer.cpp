@@ -16,27 +16,27 @@ ringbuffer::ringbuffer(int capacity)
 
 void ringbuffer::push(char value)
 {
-    std::unique_lock<std::mutex> lock(mtx); // Acquire the lock before modifying the buffer
+    std::unique_lock<std::mutex> lock(mtx);
     not_full_cv.wait(lock, [this]()
-                     { return count < capacity; }); // Wait until there is space in the buffer
+                     { return count < capacity; });
 
     buffer[tail] = value;
     tail = (tail + 1) % capacity;
     ++count;
 
-    not_empty_cv.notify_one(); // Notify one waiting consumer that there is now data in the buffer
+    not_empty_cv.notify_one();
 }
 
 char ringbuffer::pop()
 {
-    std::unique_lock<std::mutex> lock(mtx); // Acquire the lock before modifying the buffer
+    std::unique_lock<std::mutex> lock(mtx); 
     not_empty_cv.wait(lock, [this]()
-                      { return count > 0; }); // Wait until there is data in the buffer
+                      { return count > 0; });
 
     char value = buffer[head];
     head = (head + 1) % capacity;
     --count;
 
-    not_full_cv.notify_one(); // Notify one waiting producer that there is now space in the buffer
+    not_full_cv.notify_one();
     return value;
 }

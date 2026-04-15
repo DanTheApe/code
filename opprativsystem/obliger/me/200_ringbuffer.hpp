@@ -1,8 +1,8 @@
 #pragma once
 
 #include <iostream>
-#include <condition_variable> // Used to synchronize access to the buffer
-#include <mutex> // Used to protect access to the buffer
+#include <condition_variable> 
+#include <mutex>
 #include <vector>
 
 class ringbuffer
