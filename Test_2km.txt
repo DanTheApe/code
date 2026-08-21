@@ -1,0 +1,108 @@
+RC/header error (#36)  RSSI: -88.50 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=6  crc_err=36  last RSSI=-84.50 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=6  crc_err=36  last RSSI=-84.50 dBm
+CRC/header error (#37)  RSSI: -87.50 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=6  crc_err=37  last RSSI=-84.50 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=6  crc_err=37  last RSSI=-84.50 dBm
+Packet RSSI: -88.50 dBm  SNR: -12.50 dB  (#7, 21 bytes)
+CRC/header error (#38)  RSSI: -85.50 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#39)  RSSI: -85.25 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#40)  RSSI: -83.00 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#41)  RSSI: -85.75 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#42)  RSSI: -80.25 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#43)  RSSI: -87.25 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=7  crc_err=43  last RSSI=-88.50 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=7  crc_err=43  last RSSI=-88.50 dBm
+Packet RSSI: -87.00 dBm  SNR: -13.00 dB  (#8, 21 bytes)
+Packet RSSI: -87.50 dBm  SNR: -12.50 dB  (#9, 22 bytes)
+CRC/header error (#44)  RSSI: -90.25 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+Packet RSSI: -88.25 dBm  SNR: -11.75 dB  (#10, 20 bytes)
+CRC/header error (#45)  RSSI: -86.75 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#46)  RSSI: -86.75 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#47)  RSSI: -87.25 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=10  crc_err=47  last RSSI=-88.25 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=10  crc_err=47  last RSSI=-88.25 dBm
+Packet RSSI: -88.50 dBm  SNR: -6.50 dB  (#11, 21 bytes)
+Packet RSSI: -85.75 dBm  SNR: -4.25 dB  (#12, 22 bytes)
+Packet RSSI: -86.25 dBm  SNR: -3.75 dB  (#13, 28 bytes)
+Packet RSSI: -86.75 dBm  SNR: -5.25 dB  (#14, 34 bytes)
+Packet RSSI: -86.50 dBm  SNR: -4.50 dB  (#15, 20 bytes)
+Packet RSSI: -87.75 dBm  SNR: -4.25 dB  (#16, 30 bytes)
+Packet RSSI: -85.75 dBm  SNR: -4.25 dB  (#17, 22 bytes)
+Packet RSSI: -85.25 dBm  SNR: -4.75 dB  (#18, 30 bytes)
+Packet RSSI: -86.75 dBm  SNR: -4.25 dB  (#19, 30 bytes)
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=19  crc_err=47  last RSSI=-86.75 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=19  crc_err=47  last RSSI=-86.75 dBm
+Packet RSSI: -90.00 dBm  SNR: -7.00 dB  (#20, 21 bytes)
+Packet RSSI: -90.00 dBm  SNR: -6.00 dB  (#21, 21 bytes)
+Packet RSSI: -91.00 dBm  SNR: -5.00 dB  (#22, 27 bytes)
+Packet RSSI: -90.50 dBm  SNR: -6.50 dB  (#23, 34 bytes)
+Packet RSSI: -90.75 dBm  SNR: -6.25 dB  (#24, 20 bytes)
+CRC/header error (#48)  RSSI: -90.00 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+Packet RSSI: -90.00 dBm  SNR: -7.00 dB  (#25, 22 bytes)
+Packet RSSI: -90.75 dBm  SNR: -6.25 dB  (#26, 30 bytes)
+Packet RSSI: -90.50 dBm  SNR: -6.50 dB  (#27, 30 bytes)
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=27  crc_err=48  last RSSI=-90.50 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=27  crc_err=48  last RSSI=-90.50 dBm
+Packet RSSI: -90.25 dBm  SNR: -6.75 dB  (#28, 21 bytes)
+Packet RSSI: -88.50 dBm  SNR: -7.50 dB  (#29, 27 bytes)
+Packet RSSI: -90.50 dBm  SNR: -6.50 dB  (#30, 34 bytes)
+Packet RSSI: -88.00 dBm  SNR: -8.00 dB  (#31, 30 bytes)
+Packet RSSI: -91.00 dBm  SNR: -6.00 dB  (#32, 22 bytes)
+Packet RSSI: -88.75 dBm  SNR: -7.25 dB  (#33, 30 bytes)
+Packet RSSI: -89.75 dBm  SNR: -6.25 dB  (#34, 30 bytes)
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=34  crc_err=48  last RSSI=-89.75 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=34  crc_err=48  last RSSI=-89.75 dBm
+CRC/header error (#49)  RSSI: -82.25 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#50)  RSSI: -89.50 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+Packet RSSI: -92.00 dBm  SNR: -8.00 dB  (#35, 20 bytes)
+Packet RSSI: -89.75 dBm  SNR: -8.25 dB  (#36, 30 bytes)
+CRC/header error (#51)  RSSI: -82.75 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#52)  RSSI: -83.00 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=36  crc_err=52  last RSSI=-89.75 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=36  crc_err=52  last RSSI=-89.75 dBm
+CRC/header error (#53)  RSSI: -89.25 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+Packet RSSI: -88.25 dBm  SNR: -8.75 dB  (#37, 22 bytes)
+CRC/header error (#54)  RSSI: -84.75 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#55)  RSSI: -88.25 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#56)  RSSI: -77.50 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#57)  RSSI: -84.75 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=37  crc_err=57  last RSSI=-88.25 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=37  crc_err=57  last RSSI=-88.25 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=37  crc_err=57  last RSSI=-88.25 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=37  crc_err=57  last RSSI=-88.25 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=37  crc_err=57  last RSSI=-88.25 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=37  crc_err=57  last RSSI=-88.25 dBm
+CRC/header error (#58)  RSSI: -82.50 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+Packet RSSI: -88.75 dBm  SNR: -12.25 dB  (#38, 21 bytes)
+CRC/header error (#59)  RSSI: -84.50 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#60)  RSSI: -83.50 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#61)  RSSI: -87.00 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#62)  RSSI: -86.00 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#63)  RSSI: -87.00 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=38  crc_err=63  last RSSI=-88.75 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=38  crc_err=63  last RSSI=-88.75 dBm
+Packet RSSI: -87.50 dBm  SNR: -13.50 dB  (#39, 21 bytes)
+Packet RSSI: -87.75 dBm  SNR: -13.25 dB  (#40, 21 bytes)
+CRC/header error (#64)  RSSI: -86.75 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#65)  RSSI: -85.50 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#66)  RSSI: -83.00 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#67)  RSSI: -88.25 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=40  crc_err=67  last RSSI=-87.75 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=40  crc_err=67  last RSSI=-87.75 dBm
+CRC/header error (#68)  RSSI: -84.50 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#69)  RSSI: -82.75 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#70)  RSSI: -83.00 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#71)  RSSI: -83.00 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#72)  RSSI: -85.75 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#73)  RSSI: -84.75 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#74)  RSSI: -84.75 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=40  crc_err=74  last RSSI=-87.75 dBm
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=40  crc_err=74  last RSSI=-87.75 dBm
+CRC/header error (#75)  RSSI: -83.00 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#76)  RSSI: -77.75 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+Packet RSSI: -82.50 dBm  SNR: -17.50 dB  (#41, 22 bytes)
+CRC/header error (#77)  RSSI: -83.25 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+CRC/header error (#78)  RSSI: -83.25 dBm  [NEW SF11/CR4-8 + FEM CTX=0/CRX=1]
+listening [NEW SF11/CR4-8 + FEM CTX=0/CRX=1 LOCKED]  packets=41  crc_err=78  last RSSI=-82.50 dBm
+ *  Terminal will be reused by tasks, press any key to close it. 

@@ -1,0 +1,1 @@
+xdxdg-open /usr/share/cppreference/doc/html/en/index.htmll

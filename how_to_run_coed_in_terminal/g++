@@ -1,0 +1,1 @@
+g++ 001_main.cpp 101_parent.cpp 201_ringbuffer.cpp -o main && ./main
