@@ -1,0 +1,18 @@
+[GENERATED OBJECT FILE]
+b__hello_world.o
+[PROJECT FILES]
+/home/dan/code/Intelligent_real_time_systems/code_/hello_world.gpr
+20260902092232 f51f85f1579ece458b9a8651028b28a1
+[BOUND OBJECT FILES]
+/home/dan/code/Intelligent_real_time_systems/code_/obj/hello_world.o
+[GENERATED SOURCE FILES]
+b__hello_world.ads
+b__hello_world.adb
+b__hello_world.ali
+[RESULTING OPTIONS]
+-L/home/dan/code/Intelligent_real_time_systems/code_/obj/
+-L/home/dan/code/Intelligent_real_time_systems/code_/obj/
+-L/usr/lib/gcc/x86_64-linux-gnu/13/adalib/
+-shared
+-lgnat-13
+-ldl

@@ -1,0 +1,17 @@
+1. Difference of FPS and EDF schedualing
+EDF (Earliest Deadline First)
+	PDA (Prosessor Demand Analysis) QPA (Quick Processor Demand Analysis)
+	Always run task with earlyest deadline first
+	Is dynamic and more complex
+	uforrutsigbart
+	Gets more out of the processor
+FPS (Fixed Priority Scheduling)
+	Easier to implement as priorities are static
+	Mer forugsigbart
+	
+2. Processor demand Critaria (PDC)
+	
+3. Quick Processor Demand Critaeria (QPA)
+	
+4. Stack Resource Policy (SRP) for EDF (Earliest Deadline First)
+

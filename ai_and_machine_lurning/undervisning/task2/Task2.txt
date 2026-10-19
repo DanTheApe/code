@@ -1,0 +1,28 @@
+All four tasks in Assign2_supervised_learning_assign_v3.ipynb 
+are now filled in, using the info/code-supervised learning 
+scripts (perceptron.py, linear_regressor.py, neural_network.py) 
+as structural inspiration but adapted to the exact sklearn API 
+and hints the assignment specifies:
+
+Task 1: Theory answers (supervised learning, classification vs 
+regression, confusion matrix, preprocessing).
+
+Task 2: Perceptron() trained on OR-gate data, predictions printed, 
+then retrained with max_iter=1000, eta0=0.01 to compare.
+
+Task 3: Synthetic y = 2.5x + noise data, LinearRegression fit, 
+MAE/MSE/R² reported, scatter+line plot.
+
+Task 4: load_digits() → 80/20 split → StandardScaler 
+(fit on train only) → MLPClassifier(hidden_layer_sizes=(50,), 
+max_iter=300) → accuracy + confusion matrix.
+I verified all the code by running the equivalent logic standalone 
+(no nbconvert in this venv, so I ran a script mirroring each cell): 
+Perceptron converges correctly on OR, regression gets R²≈0.98, and 
+the MLP hits ≈97.8% validation accuracy. I then adjusted the Task 
+4.7 written answer to reflect the actual confusion-matrix errors 
+(mainly 1↔4, 1↔8, 6↔1, 5↔9, 7↔9 mix-ups) rather than a generic guess.
+
+The remaining blanks ((your answer) under "Optional reflection", 
+and the standalone last cell) are intentionally left for you to fill 
+in personally.
